@@ -6,16 +6,17 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_lock_icon"
         android:label="Farooqui App Lock"
-        android:roundIcon="@drawable/ic_lock_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         
-        <!-- Main Dashboard & App Selection -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -25,18 +26,17 @@
             </intent-filter>
         </activity>
 
-        <!-- Lock Screen Activity -->
         <activity
             android:name=".LockScreenActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
-        <!-- Background Monitoring Service -->
         <service
             android:name=".AppLockService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="shortService" />
+            android:foregroundServiceType="specialUse"
+            tools:ignore="ForegroundServicePermission" />
 
     </application>
 
