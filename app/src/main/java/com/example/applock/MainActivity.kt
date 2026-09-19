@@ -1,12 +1,8 @@
 package com.example.applock
 
-import android.app.AppOpsManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Button
@@ -26,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 32, 32, 32)
-            setBackgroundColor(android.graphics.Color.parseColor("#F2F2F7")) // iOS Background color
+            setBackgroundColor(android.graphics.Color.parseColor("#F2F2F7"))
         }
 
         val titleView = TextView(this).apply {
@@ -38,51 +34,16 @@ class MainActivity : AppCompatActivity() {
         }
         mainLayout.addView(titleView)
 
-        // Permission Buttons Container
-        val btnPermission = Button(this).apply {
-            text = "1. Grant Usage Access Permission"
+        val btnAccessibility = Button(this).apply {
+            text = "Enable Accessibility Protection"
             setBackgroundColor(android.graphics.Color.parseColor("#007AFF"))
             setTextColor(android.graphics.Color.WHITE)
             setOnClickListener {
-                startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                Toast.makeText(context, "Find 'Farooqui App Lock' and turn it ON", Toast.LENGTH_LONG).show()
             }
         }
-        mainLayout.addView(btnPermission)
-
-        val btnBattery = Button(this).apply {
-            text = "2. Disable Battery Optimization"
-            setBackgroundColor(android.graphics.Color.parseColor("#34C759"))
-            setTextColor(android.graphics.Color.WHITE)
-            setOnClickListener {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = Uri.parse("package:$packageName")
-                    }
-                    startActivity(intent)
-                }
-            }
-        }
-        mainLayout.addView(btnBattery)
-
-        val btnStartService = Button(this).apply {
-            text = "3. Start Protection Service"
-            setBackgroundColor(android.graphics.Color.parseColor("#FF9500"))
-            setTextColor(android.graphics.Color.WHITE)
-            setOnClickListener {
-                if (hasUsageStatsPermission()) {
-                    val serviceIntent = Intent(this@MainActivity, AppLockService::class.java)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
-                    Toast.makeText(this@MainActivity, "Protection Started!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@MainActivity, "Please grant Usage Access first!", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-        mainLayout.addView(btnStartService)
+        mainLayout.addView(btnAccessibility)
 
         val subTitle = TextView(this).apply {
             text = "Select Apps to Lock"
@@ -100,16 +61,6 @@ class MainActivity : AppCompatActivity() {
         loadInstalledApps(listView)
     }
 
-    private fun hasUsageStatsPermission(): Boolean {
-        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            android.os.Process.myUid(),
-            packageName
-        )
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
-
     private fun loadInstalledApps(listView: ListView) {
         val pm: PackageManager = packageManager
         val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
@@ -124,7 +75,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Alphabetical sorting
         appList.sortBy { it.appName }
 
         val adapter = AppAdapter(this, appList) { app, isLocked ->
@@ -135,7 +85,7 @@ class MainActivity : AppCompatActivity() {
                 lockedAppsSet.remove(app.packageName)
                 Toast.makeText(this, "${app.appName} Unlocked", Toast.LENGTH_SHORT).show()
             }
-            AppLockService.lockedAppsList = lockedAppsSet
+            AppAccessibilityService.lockedAppsList = lockedAppsSet
         }
 
         listView.adapter = adapter
