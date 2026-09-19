@@ -10,9 +10,28 @@ import java.util.concurrent.Executor
 
 class LockScreenActivity : AppCompatActivity() {
 
+    private var isUnlocked = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(android.R.layout.activity_list_item)
+        
+        // Ek solid background color set kar rahe hain taaki piche ka app bilkul na dikhe
+        val layout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setBackgroundColor(android.graphics.Color.parseColor("#1C1C1E"))
+            gravity = android.view.Gravity.CENTER
+        }
+
+        val text = android.widget.TextView(this).apply {
+            text = "Farooqui App Lock"
+            textSize = 22f
+            setTextColor(android.graphics.Color.WHITE)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.CENTER
+        }
+        layout.addView(text)
+
+        setContentView(layout)
 
         showBiometricPrompt()
     }
@@ -24,23 +43,28 @@ class LockScreenActivity : AppCompatActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    goToHome()
+                    if (!isUnlocked) {
+                        goToHome()
+                    }
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    finish() // Unlock successful, app open ho jayegi
+                    isUnlocked = true
+                    Toast.init?.let {} // safety
+                    Toast.makeText(applicationContext, "Unlocked Successfully", Toast.LENGTH_SHORT).show()
+                    finish() // Unlock hone par lock screen gayab aur app khul jayegi
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    Toast.makeText(applicationContext, "Verification Failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "Verification Failed. Try Again.", Toast.LENGTH_SHORT).show()
                 }
             })
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Farooqui App Lock")
-            .setSubtitle("Verify Fingerprint or Face to Unlock")
+            .setSubtitle("Use Fingerprint or Face Unlock to Open")
             .setNegativeButtonText("Cancel")
             .build()
 
@@ -57,6 +81,10 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        goToHome()
+        if (!isUnlocked) {
+            goToHome()
+        } else {
+            super.onBackPressed()
+        }
     }
 }
