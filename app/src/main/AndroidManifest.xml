@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -11,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         
-        <!-- Main Biometric Lock Screen -->
+        <!-- Main Dashboard & App Selection -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -21,10 +23,18 @@
             </intent-filter>
         </activity>
 
-        <!-- App Selection Screen -->
+        <!-- Lock Screen Activity jo doosre apps ke upar khulegi -->
         <activity
-            android:name=".AppSelectionActivity"
-            android:exported="false" />
+            android:name=".LockScreenActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- Background Monitoring Service -->
+        <service
+            android:name=".AppLockService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
 
     </application>
 
