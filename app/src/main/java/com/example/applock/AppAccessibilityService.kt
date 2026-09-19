@@ -1,8 +1,8 @@
 package com.example.applock
 
-accessibilityservice.AccessibilityService
-import android.view.accessibility.AccessibilityEvent
+import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.view.accessibility.AccessibilityEvent
 
 class AppAccessibilityService : AccessibilityService() {
 
