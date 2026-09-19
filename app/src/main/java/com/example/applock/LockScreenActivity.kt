@@ -15,7 +15,7 @@ class LockScreenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Ek solid background color set kar rahe hain taaki piche ka app bilkul na dikhe
+        // Dark theme background taaki piche ka app hide rahe
         val layout = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setBackgroundColor(android.graphics.Color.parseColor("#1C1C1E"))
@@ -33,6 +33,7 @@ class LockScreenActivity : AppCompatActivity() {
 
         setContentView(layout)
 
+        // Biometric prompt turant trigger karo
         showBiometricPrompt()
     }
 
@@ -51,9 +52,9 @@ class LockScreenActivity : AppCompatActivity() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     isUnlocked = true
-                    Toast.init?.let {} // safety
+                    AppAccessibilityService.isCurrentlyLocked = false // Lock state reset
                     Toast.makeText(applicationContext, "Unlocked Successfully", Toast.LENGTH_SHORT).show()
-                    finish() // Unlock hone par lock screen gayab aur app khul jayegi
+                    finish() // Unlock hone par lock screen gayab aur WhatsApp khul jayega
                 }
 
                 override fun onAuthenticationFailed() {
@@ -72,6 +73,7 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun goToHome() {
+        AppAccessibilityService.isCurrentlyLocked = false
         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -86,5 +88,10 @@ class LockScreenActivity : AppCompatActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        AppAccessibilityService.isCurrentlyLocked = false
     }
 }
