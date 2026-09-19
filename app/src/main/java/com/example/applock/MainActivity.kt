@@ -9,34 +9,36 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.ListView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private val lockedApps = mutableSetOf<String>()
+    private val lockedAppsSet = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(40, 40, 40, 40)
-            setBackgroundColor(android.graphics.Color.parseColor("#F8F9FA"))
+        val mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+            setBackgroundColor(android.graphics.Color.parseColor("#F2F2F7")) // iOS Background color
         }
 
-        val titleView = android.widget.TextView(this).apply {
+        val titleView = TextView(this).apply {
             text = "Farooqui App Lock"
-            textSize = 24f
+            textSize = 26f
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(android.graphics.Color.parseColor("#1A1A1A"))
-            setPadding(0, 0, 0, 32)
+            setTextColor(android.graphics.Color.parseColor("#000000"))
+            setPadding(0, 16, 0, 24)
         }
-        layout.addView(titleView)
+        mainLayout.addView(titleView)
 
+        // Permission Buttons Container
         val btnPermission = Button(this).apply {
             text = "1. Grant Usage Access Permission"
             setBackgroundColor(android.graphics.Color.parseColor("#007AFF"))
@@ -45,13 +47,12 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             }
         }
-        layout.addView(btnPermission)
+        mainLayout.addView(btnPermission)
 
         val btnBattery = Button(this).apply {
             text = "2. Disable Battery Optimization"
             setBackgroundColor(android.graphics.Color.parseColor("#34C759"))
             setTextColor(android.graphics.Color.WHITE)
-            setPadding(0, 16, 0, 16)
             setOnClickListener {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -61,7 +62,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        layout.addView(btnBattery)
+        mainLayout.addView(btnBattery)
 
         val btnStartService = Button(this).apply {
             text = "3. Start Protection Service"
@@ -75,20 +76,27 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         startService(serviceIntent)
                     }
-                    Toast.makeText(this@MainActivity, "Protection Started Successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Protection Started!", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@MainActivity, "Please grant Usage Access first!", Toast.LENGTH_LONG).show()
                 }
             }
         }
-        layout.addView(btnStartService)
+        mainLayout.addView(btnStartService)
 
-        val listView = ListView(this).apply {
-            setPadding(0, 24, 0, 0)
+        val subTitle = TextView(this).apply {
+            text = "Select Apps to Lock"
+            textSize = 18f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(android.graphics.Color.parseColor("#3A3A3C"))
+            setPadding(0, 32, 0, 16)
         }
-        layout.addView(listView)
+        mainLayout.addView(subTitle)
 
-        setContentView(layout)
+        val listView = ListView(this)
+        mainLayout.addView(listView)
+
+        setContentView(mainLayout)
         loadInstalledApps(listView)
     }
 
@@ -106,30 +114,30 @@ class MainActivity : AppCompatActivity() {
         val pm: PackageManager = packageManager
         val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
         
-        val appList = mutableListOf<String>()
-        val packageNames = mutableListOf<String>()
+        val appList = mutableListOf<AppModel>()
 
         for (app in packages) {
             if (app.flags and ApplicationInfo.FLAG_SYSTEM == 0 && app.packageName != packageName) {
-                appList.add(pm.getApplicationLabel(app).toString())
-                packageNames.add(app.packageName)
+                val appName = pm.getApplicationLabel(app).toString()
+                val icon = pm.getApplicationIcon(app)
+                appList.add(AppModel(appName, app.packageName, icon, false))
             }
         }
 
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_multiple_choice, appList)
-        listView.adapter = adapter
-        listView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+        // Alphabetical sorting
+        appList.sortBy { it.appName }
 
-        listView.setOnItemClickListener { _, _, position, _ ->
-            val pkg = packageNames[position]
-            if (lockedApps.contains(pkg)) {
-                lockedApps.remove(pkg)
-                Toast.makeText(this, "Unlocked: ${appList[position]}", Toast.LENGTH_SHORT).show()
+        val adapter = AppAdapter(this, appList) { app, isLocked ->
+            if (isLocked) {
+                lockedAppsSet.add(app.packageName)
+                Toast.makeText(this, "${app.appName} Locked", Toast.LENGTH_SHORT).show()
             } else {
-                lockedApps.add(pkg)
-                Toast.makeText(this, "Locked: ${appList[position]}", Toast.LENGTH_SHORT).show()
+                lockedAppsSet.remove(app.packageName)
+                Toast.makeText(this, "${app.appName} Unlocked", Toast.LENGTH_SHORT).show()
             }
-            AppLockService.lockedAppsList = lockedApps
+            AppLockService.lockedAppsList = lockedAppsSet
         }
+
+        listView.adapter = adapter
     }
 }
