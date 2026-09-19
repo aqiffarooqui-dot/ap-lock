@@ -15,15 +15,22 @@ class AppAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || 
+            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            
             val packageName = event.packageName?.toString() ?: return
 
-            if (packageName != "com.example.applock" && packageName != "com.android.systemui") {
+            if (packageName != "com.example.applock" && 
+                packageName != "com.android.systemui" && 
+                packageName != "android") {
+                
                 if (lockedAppsList.contains(packageName)) {
-                    if (packageName != lastLockedApp || System.currentTimeMillis() - lastUnlockTime > 4000) {
+                    if (packageName != lastLockedApp || System.currentTimeMillis() - lastUnlockTime > 5000) {
+                        
                         val lockIntent = Intent(applicationContext, LockScreenActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                             putExtra("PACKAGE_NAME", packageName)
                         }
                         startActivity(lockIntent)
