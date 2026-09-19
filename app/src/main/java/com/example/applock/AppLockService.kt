@@ -15,13 +15,13 @@ import java.util.*
 class AppLockService : Service() {
 
     companion object {
-        var lockedAppsList: Set<String> = emptySet()
-        private const val CHANNEL_ID = "AppLockServiceChannel"
+        var lockedAppsList: MutableSet<String> = mutableSetOf()
+        private const val CHANNEL_ID = "FarooquiAppLockChannel"
     }
 
     private var timer: Timer? = null
     private var lastLockedApp: String? = null
-    private var unlockTime: Long = 0
+    private var lastUnlockTime: Long = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -30,13 +30,13 @@ class AppLockService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Farooqui App Lock")
-            .setContentText("Protection service is running in background")
+            .setContentTitle("Farooqui App Lock Active")
+            .setContentText("Protecting your private apps securely")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
 
-        startForeground(1, notification)
+        startForeground(101, notification)
         startMonitoring()
         return START_STICKY
     }
@@ -48,10 +48,10 @@ class AppLockService : Service() {
             override fun run() {
                 val currentApp = getForegroundApp()
                 
-                if (currentApp != null && currentApp != packageName) {
+                if (currentApp != null && currentApp != packageName && currentApp != "com.android.systemui") {
                     if (lockedAppsList.contains(currentApp)) {
-                        // Agar same app dobara khula hai aur thodi der pehle hi unlock hua tha, toh bar-bar lock mat karo
-                        if (currentApp != lastLockedApp || System.currentTimeMillis() - unlockTime > 4000) {
+                        // Agar app lock hai aur pichle 4 seconds mein unlock nahi hua
+                        if (currentApp != lastLockedApp || System.currentTimeMillis() - lastUnlockTime > 4000) {
                             val lockIntent = Intent(applicationContext, LockScreenActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -63,21 +63,24 @@ class AppLockService : Service() {
                     }
                 }
             }
-        }, 0, 500) // Har 0.5 seconds mein super-fast check
+        }, 0, 300) // Har 0.3 seconds mein lightning-fast monitoring
     }
 
     private fun getForegroundApp(): String? {
         val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
-        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 5, time)
+        // Query last 3 seconds
+        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 3000, time)
         if (!stats.isNullOrEmpty()) {
-            val sortedMap = TreeMap<Long, android.app.usage.UsageStats>()
+            var recentPkg: String? = null
+            var maxTime: Long = 0
             for (usageStats in stats) {
-                sortedMap[usageStats.lastTimeUsed] = usageStats
+                if (usageStats.lastTimeUsed > maxTime) {
+                    maxTime = usageStats.lastTimeUsed
+                    recentPkg = usageStats.packageName
+                }
             }
-            if (sortedMap.isNotEmpty()) {
-                return sortedMap[sortedMap.lastKey()]?.packageName
-            }
+            return recentPkg
         }
         return null
     }
@@ -86,7 +89,7 @@ class AppLockService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "AppLock Service Channel",
+                "AppLock Background Protection",
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
