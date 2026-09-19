@@ -8,6 +8,7 @@ class AppAccessibilityService : AccessibilityService() {
 
     companion object {
         var lockedAppsList: MutableSet<String> = mutableSetOf()
+        var isCurrentlyLocked: Boolean = false // Track karega ki abhi lock screen active hai ya nahi
         private var lastLockedApp: String? = null
         private var lastUnlockTime: Long = 0
     }
@@ -25,16 +26,19 @@ class AppAccessibilityService : AccessibilityService() {
                 packageName != "android") {
                 
                 if (lockedAppsList.contains(packageName)) {
-                    if (packageName != lastLockedApp || System.currentTimeMillis() - lastUnlockTime > 5000) {
-                        
-                        val lockIntent = Intent(applicationContext, LockScreenActivity::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                            putExtra("PACKAGE_NAME", packageName)
+                    // Agar pehle se lock screen open nahi hai, tab hi naya intent bhejo
+                    if (!isCurrentlyLocked) {
+                        if (packageName != lastLockedApp || System.currentTimeMillis() - lastUnlockTime > 4000) {
+                            isCurrentlyLocked = true
+                            val lockIntent = Intent(applicationContext, LockScreenActivity::class.java).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                                putExtra("PACKAGE_NAME", packageName)
+                            }
+                            startActivity(lockIntent)
+                            lastLockedApp = packageName
                         }
-                        startActivity(lockIntent)
-                        lastLockedApp = packageName
                     }
                 }
             }
