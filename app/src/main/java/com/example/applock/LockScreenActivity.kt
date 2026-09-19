@@ -11,11 +11,13 @@ import java.util.concurrent.Executor
 class LockScreenActivity : AppCompatActivity() {
 
     private var isUnlocked = false
+    private var targetPackage: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Dark theme background taaki piche ka app hide rahe
+        targetPackage = intent.getStringExtra("TARGET_PACKAGE")
+
         val layout = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setBackgroundColor(android.graphics.Color.parseColor("#1C1C1E"))
@@ -32,8 +34,6 @@ class LockScreenActivity : AppCompatActivity() {
         layout.addView(text)
 
         setContentView(layout)
-
-        // Biometric prompt turant trigger karo
         showBiometricPrompt()
     }
 
@@ -52,9 +52,18 @@ class LockScreenActivity : AppCompatActivity() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     isUnlocked = true
-                    AppAccessibilityService.isCurrentlyLocked = false // Lock state reset
+                    AppAccessibilityService.isCurrentlyLocked = false
                     Toast.makeText(applicationContext, "Unlocked Successfully", Toast.LENGTH_SHORT).show()
-                    finish() // Unlock hone par lock screen gayab aur WhatsApp khul jayega
+                    
+                    // Unlock hone ke baad seedha target app (jaise WhatsApp) ko foreground mein layenge
+                    if (!targetPackage.isNullOrEmpty()) {
+                        val launchIntent = packageManager.getLaunchIntentForPackage(targetPackage!!)
+                        if (launchIntent != null) {
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            startActivity(launchIntent)
+                        }
+                    }
+                    finish()
                 }
 
                 override fun onAuthenticationFailed() {
