@@ -1,5 +1,6 @@
 package com.example.applock
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -13,7 +14,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(android.R.layout.activity_list_item)
 
-        // App khulte hi Biometric fingerprint prompt chalega
+        // App khulte hi Biometric (Fingerprint / Face Unlock) trigger hoga
         showBiometricPrompt()
     }
 
@@ -24,12 +25,17 @@ class MainActivity : AppCompatActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    Toast.makeText(applicationContext, "Authentication error: $errString", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "Error: $errString", Toast.LENGTH_SHORT).show()
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     Toast.makeText(applicationContext, "Unlocked Successfully!", Toast.LENGTH_SHORT).show()
+                    
+                    // Unlock hone ke baad App Selection Activity par chale jayenge
+                    val intent = Intent(this@MainActivity, AppSelectionActivity::class.java)
+                    startActivity(intent)
+                    finish()
                 }
 
                 override fun onAuthenticationFailed() {
@@ -40,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("AppLock Security")
-            .setSubtitle("Use your fingerprint to unlock AppLock")
+            .setSubtitle("Use your Fingerprint or Face Unlock")
             .setNegativeButtonText("Cancel")
             .build()
 
