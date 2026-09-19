@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Farooqui App Lock</string>
+    <string name="accessibility_service_description">Farooqui App Lock monitors opened applications to provide instant biometric security.</string>
+</resources>
