@@ -23,25 +23,29 @@ class LockScreenActivity : AppCompatActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    Toast.makeText(applicationContext, "Authentication required!", Toast.LENGTH_SHORT).show()
-                    finishAffinity() // Agar cancel kare toh home screen par bhej de
+                    // Cancel karne par phone ki home screen par bhej dega taaki app khul na sake
+                    val homeIntent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+                        addCategory(android.content.Intent.CATEGORY_HOME)
+                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    startActivity(homeIntent)
+                    finish()
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    Toast.makeText(applicationContext, "Unlocked!", Toast.LENGTH_SHORT).show()
-                    finish() // Unlock hone par lock screen hat jayegi aur app khul jayega
+                    finish() // Unlock successful, lock screen gayab aur WhatsApp khul jayega
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    Toast.makeText(applicationContext, "Wrong Fingerprint/Face", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "Authentication Failed", Toast.LENGTH_SHORT).show()
                 }
             })
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("App Locked")
-            .setSubtitle("Use Fingerprint or Face Unlock to open")
+            .setTitle("Farooqui App Lock")
+            .setSubtitle("Verify Fingerprint or Face to Open")
             .setNegativeButtonText("Cancel")
             .build()
 
@@ -49,8 +53,12 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        // Back button dabane par lock bypass na ho
-        super.onBackPressed()
-        finishAffinity()
+        // Back button dabane par bhi bypass nahi hoga, seedha home screen jayega
+        val homeIntent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+            addCategory(android.content.Intent.CATEGORY_HOME)
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        startActivity(homeIntent)
+        finish()
     }
 }
