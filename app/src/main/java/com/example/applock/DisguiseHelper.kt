@@ -1,8 +1,8 @@
 package com.example.applock
 
-content.ComponentName
-content.Context
-content.pm.PackageManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
 
 object DisguiseHelper {
 
