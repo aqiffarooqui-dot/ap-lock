@@ -1,12 +1,12 @@
 package com.example.applock
 
-graphics.Color
-os.Bundle
-view.Gravity
-widget.LinearLayout
-widget.ScrollView
-widget.TextView
-appcompat.app.AppCompatActivity
+import android.graphics.Color
+import android.os.Bundle
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 
 class AboutActivity : AppCompatActivity() {
 
