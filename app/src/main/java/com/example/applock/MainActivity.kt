@@ -7,9 +7,10 @@ import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
-import android.widget.GridView
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -21,27 +22,19 @@ import java.util.concurrent.Executor
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var gridView: GridView
-
     private var authenticated = false
-
     private var authenticating = false
-
     private var shouldAuthenticate = true
 
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
+    private lateinit var rootLayout: LinearLayout
 
-        super.onCreate(
-            savedInstanceState
-        )
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-        setupModernUI()
+        setupDashboard()
     }
 
     override fun onStart() {
-
         super.onStart()
 
         if (shouldAuthenticate && !authenticated) {
@@ -50,16 +43,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-
         super.onStop()
 
-        // Jab AppLock foreground se bahar chala jaye,
-        // next time open hone par authentication maango.
         if (!isChangingConfigurations) {
             authenticated = false
             shouldAuthenticate = true
         }
     }
+
+    // =====================================================
+    // AUTHENTICATION
+    // =====================================================
 
     private fun authenticateForAppLock() {
 
@@ -69,69 +63,51 @@ class MainActivity : AppCompatActivity() {
 
         authenticating = true
 
-        val biometricManager =
-            BiometricManager.from(this)
+        val biometricManager = BiometricManager.from(this)
 
         val authenticators =
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
                     BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
         val canAuthenticate =
-            biometricManager.canAuthenticate(
-                authenticators
-            )
+            biometricManager.canAuthenticate(authenticators)
 
-        if (
-            canAuthenticate !=
-            BiometricManager.BIOMETRIC_SUCCESS
-        ) {
+        if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
 
             authenticating = false
-
             showSecuritySetupDialog()
-
             return
         }
 
         val executor: Executor =
-            ContextCompat.getMainExecutor(
-                this
-            )
+            ContextCompat.getMainExecutor(this)
 
         val biometricPrompt =
             BiometricPrompt(
                 this,
                 executor,
-                object :
-                    BiometricPrompt.AuthenticationCallback() {
+                object : BiometricPrompt.AuthenticationCallback() {
 
-                    override fun
-                        onAuthenticationSucceeded(
-                        result:
-                        BiometricPrompt.AuthenticationResult
+                    override fun onAuthenticationSucceeded(
+                        result: BiometricPrompt.AuthenticationResult
                     ) {
-
-                        super
-                            .onAuthenticationSucceeded(
-                                result
-                            )
+                        super.onAuthenticationSucceeded(result)
 
                         authenticating = false
                         authenticated = true
                         shouldAuthenticate = false
+
+                        refreshDashboard()
                     }
 
-                    override fun
-                        onAuthenticationError(
+                    override fun onAuthenticationError(
                         errorCode: Int,
                         errString: CharSequence
                     ) {
-
-                        super
-                            .onAuthenticationError(
-                                errorCode,
-                                errString
-                            )
+                        super.onAuthenticationError(
+                            errorCode,
+                            errString
+                        )
 
                         authenticating = false
 
@@ -147,11 +123,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    override fun
-                        onAuthenticationFailed() {
-
-                        super
-                            .onAuthenticationFailed()
+                    override fun onAuthenticationFailed() {
+                        super.onAuthenticationFailed()
 
                         Toast.makeText(
                             this@MainActivity,
@@ -164,34 +137,22 @@ class MainActivity : AppCompatActivity() {
 
         val promptInfo =
             BiometricPrompt.PromptInfo.Builder()
-                .setTitle(
-                    "Farooqui App Lock"
-                )
-                .setSubtitle(
-                    "Unlock App Lock"
-                )
-                .setAllowedAuthenticators(
-                    authenticators
-                )
+                .setTitle("Farooqui App Lock")
+                .setSubtitle("Unlock App Lock")
+                .setAllowedAuthenticators(authenticators)
                 .build()
 
-        biometricPrompt.authenticate(
-            promptInfo
-        )
+        biometricPrompt.authenticate(promptInfo)
     }
 
     private fun showSecuritySetupDialog() {
 
         AlertDialog.Builder(this)
-            .setTitle(
-                "Screen Lock Required"
-            )
+            .setTitle("Screen Lock Required")
             .setMessage(
                 "Please set a fingerprint, face unlock, PIN, password or pattern on your phone before using Farooqui App Lock."
             )
-            .setPositiveButton(
-                "Open Security Settings"
-            ) { _, _ ->
+            .setPositiveButton("Open Security Settings") { _, _ ->
 
                 try {
 
@@ -201,7 +162,7 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
 
-                } catch (e: Exception) {
+                } catch (_: Exception) {
 
                     Toast.makeText(
                         this,
@@ -210,54 +171,779 @@ class MainActivity : AppCompatActivity() {
                     ).show()
                 }
             }
-            .setNegativeButton(
-                "Close"
-            ) { _, _ ->
+            .setNegativeButton("Close") { _, _ ->
                 finish()
             }
             .setCancelable(false)
             .show()
     }
 
-    private fun setupModernUI() {
+    // =====================================================
+    // DASHBOARD
+    // =====================================================
 
-        val mainLayout =
+    private fun setupDashboard() {
+
+        rootLayout =
             LinearLayout(this).apply {
 
-                orientation =
-                    LinearLayout.VERTICAL
+                orientation = LinearLayout.VERTICAL
 
                 setBackgroundColor(
-                    Color.parseColor("#F2F2F7")
+                    Color.parseColor("#F6F7FB")
                 )
             }
 
-        val headerLayout =
+        val scrollView =
+            ScrollView(this).apply {
+
+                isFillViewport = true
+            }
+
+        val content =
             LinearLayout(this).apply {
 
-                orientation =
-                    LinearLayout.HORIZONTAL
+                orientation = LinearLayout.VERTICAL
 
                 setPadding(
-                    32,
-                    48,
-                    32,
-                    24
+                    dp(20),
+                    dp(24),
+                    dp(20),
+                    dp(100)
                 )
+            }
 
-                gravity =
-                    Gravity.CENTER_VERTICAL
+        // -------------------------------------------------
+        // HEADER
+        // -------------------------------------------------
 
-                setBackgroundColor(
-                    Color.WHITE
+        val header =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.HORIZONTAL
+
+                gravity = Gravity.CENTER_VERTICAL
+
+                setPadding(
+                    0,
+                    dp(12),
+                    0,
+                    dp(20)
                 )
             }
 
         val titleContainer =
             LinearLayout(this).apply {
 
-                orientation =
-                    LinearLayout.VERTICAL
+                orientation = LinearLayout.VERTICAL
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+            }
+
+        val title =
+            TextView(this).apply {
+
+                text = "Farooqui App Lock"
+
+                textSize = 26f
+
+                setTextColor(
+                    Color.parseColor("#111318")
+                )
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+            }
+
+        titleContainer.addView(title)
+
+        val subtitle =
+            TextView(this).apply {
+
+                text = "Your privacy, protected."
+
+                textSize = 14f
+
+                setTextColor(
+                    Color.parseColor("#737780")
+                )
+
+                setPadding(
+                    0,
+                    dp(4),
+                    0,
+                    0
+                )
+            }
+
+        titleContainer.addView(subtitle)
+
+        header.addView(titleContainer)
+
+        val settingsButton =
+            TextView(this).apply {
+
+                text = "⚙"
+
+                textSize = 25f
+
+                gravity = Gravity.CENTER
+
+                setTextColor(
+                    Color.parseColor("#2563EB")
+                )
+
+                setPadding(
+                    dp(12),
+                    dp(8),
+                    dp(8),
+                    dp(8)
+                )
+
+                setOnClickListener {
+
+                    startActivity(
+                        Intent(
+                            this@MainActivity,
+                            SettingsActivity::class.java
+                        )
+                    )
+                }
+            }
+
+        header.addView(settingsButton)
+
+        content.addView(header)
+
+        // -------------------------------------------------
+        // PROTECTION CARD
+        // -------------------------------------------------
+
+        val protectionCard =
+            createCard()
+
+        val protectionHeader =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.HORIZONTAL
+
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+        val shield =
+            TextView(this).apply {
+
+                text = "🛡️"
+
+                textSize = 34f
+
+                gravity = Gravity.CENTER
+            }
+
+        protectionHeader.addView(
+            shield,
+            LinearLayout.LayoutParams(
+                dp(55),
+                dp(55)
+            )
+        )
+
+        val protectionText =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.VERTICAL
+
+                setPadding(
+                    dp(14),
+                    0,
+                    0,
+                    0
+                )
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+            }
+
+        val protectionTitle =
+            TextView(this).apply {
+
+                text = "Protection Active"
+
+                textSize = 18f
+
+                setTextColor(
+                    Color.parseColor("#111318")
+                )
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+            }
+
+        protectionText.addView(protectionTitle)
+
+        val protectionStatus =
+            TextView(this).apply {
+
+                text =
+                    if (isAccessibilityServiceEnabled()) {
+                        "App Lock service is running"
+                    } else {
+                        "Action required: Enable Accessibility"
+                    }
+
+                textSize = 13f
+
+                setTextColor(
+                    if (isAccessibilityServiceEnabled()) {
+                        Color.parseColor("#16803C")
+                    } else {
+                        Color.parseColor("#C2410C")
+                    }
+                )
+
+                setPadding(
+                    0,
+                    dp(4),
+                    0,
+                    0
+                )
+            }
+
+        protectionText.addView(protectionStatus)
+
+        protectionHeader.addView(protectionText)
+
+        protectionCard.addView(protectionHeader)
+
+        val protectionAction =
+            TextView(this).apply {
+
+                text =
+                    if (isAccessibilityServiceEnabled()) {
+                        "Protection is ready"
+                    } else {
+                        "Enable Protection →"
+                    }
+
+                textSize = 13f
+
+                setTextColor(
+                    Color.parseColor("#2563EB")
+                )
+
+                setPadding(
+                    0,
+                    dp(16),
+                    0,
+                    0
+                )
+
+                setOnClickListener {
+
+                    if (!isAccessibilityServiceEnabled()) {
+
+                        startActivity(
+                            Intent(
+                                Settings.ACTION_ACCESSIBILITY_SETTINGS
+                            )
+                        )
+                    }
+                }
+            }
+
+        protectionCard.addView(protectionAction)
+
+        content.addView(
+            protectionCard,
+            marginParams(bottom = 16)
+        )
+
+        // -------------------------------------------------
+        // STATISTICS
+        // -------------------------------------------------
+
+        val statsRow =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.HORIZONTAL
+            }
+
+        val lockedCount =
+            AppLockPreferences
+                .getLockedApps(this)
+                .size
+
+        val installedCount =
+            getLaunchableAppsCount()
+
+        statsRow.addView(
+            createStatCard(
+                "🔒",
+                lockedCount.toString(),
+                "Locked Apps"
+            ),
+            weightParams()
+        )
+
+        statsRow.addView(
+            createStatCard(
+                "📱",
+                installedCount.toString(),
+                "Available Apps"
+            ),
+            weightParams()
+        )
+
+        content.addView(
+            statsRow,
+            marginParams(bottom = 12)
+        )
+
+        val secondStatsRow =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.HORIZONTAL
+            }
+
+        secondStatsRow.addView(
+            createStatCard(
+                "🚨",
+                "0",
+                "Intrusion Attempts"
+            ),
+            weightParams()
+        )
+
+        secondStatsRow.addView(
+            createStatCard(
+                "🔐",
+                "System",
+                "Authentication"
+            ),
+            weightParams()
+        )
+
+        content.addView(
+            secondStatsRow,
+            marginParams(bottom = 20)
+        )
+
+        // -------------------------------------------------
+        // QUICK ACTIONS
+        // -------------------------------------------------
+
+        content.addView(
+            createSectionTitle("Quick Actions")
+        )
+
+        content.addView(
+            createActionCard(
+                "🔒",
+                "Lock Apps",
+                "Choose which apps should be protected"
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        AppsActivity::class.java
+                    )
+                )
+            },
+            marginParams(bottom = 12)
+        )
+
+        content.addView(
+            createActionCard(
+                "🛡️",
+                "Security Center",
+                "Check protection and device security"
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        SecurityActivity::class.java
+                    )
+                )
+            },
+            marginParams(bottom = 12)
+        )
+
+        content.addView(
+            createActionCard(
+                "📸",
+                "Intruder Gallery",
+                "View captured intrusion attempts"
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        IntruderGalleryActivity::class.java
+                    )
+                )
+            },
+            marginParams(bottom = 12)
+        )
+
+        content.addView(
+            createActionCard(
+                "⚙️",
+                "Settings",
+                "Configure App Lock and privacy"
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        SettingsActivity::class.java
+                    )
+                )
+            }
+        )
+
+        scrollView.addView(content)
+
+        rootLayout.addView(
+            scrollView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
+        // -------------------------------------------------
+        // BOTTOM NAVIGATION
+        // -------------------------------------------------
+
+        rootLayout.addView(
+            createBottomNavigation()
+        )
+
+        setContentView(rootLayout)
+    }
+
+    // =====================================================
+    // BOTTOM NAVIGATION
+    // =====================================================
+
+    private fun createBottomNavigation(): LinearLayout {
+
+        val navigation =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.HORIZONTAL
+
+                gravity = Gravity.CENTER
+
+                setBackgroundColor(Color.WHITE)
+
+                setPadding(
+                    dp(8),
+                    dp(8),
+                    dp(8),
+                    dp(10)
+                )
+
+                elevation = dp(8).toFloat()
+            }
+
+        navigation.addView(
+            createNavigationItem(
+                "⌂",
+                "Home",
+                true
+            ) {}
+        )
+
+        navigation.addView(
+            createNavigationItem(
+                "▣",
+                "Apps",
+                false
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        AppsActivity::class.java
+                    )
+                )
+            }
+        )
+
+        navigation.addView(
+            createNavigationItem(
+                "🛡",
+                "Security",
+                false
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        SecurityActivity::class.java
+                    )
+                )
+            }
+        )
+
+        navigation.addView(
+            createNavigationItem(
+                "⚙",
+                "Settings",
+                false
+            ) {
+
+                startActivity(
+                    Intent(
+                        this,
+                        SettingsActivity::class.java
+                    )
+                )
+            }
+        )
+
+        return navigation
+    }
+
+    private fun createNavigationItem(
+        icon: String,
+        label: String,
+        selected: Boolean,
+        action: () -> Unit
+    ): LinearLayout {
+
+        val item =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.VERTICAL
+
+                gravity = Gravity.CENTER
+
+                setPadding(
+                    dp(12),
+                    dp(4),
+                    dp(12),
+                    dp(4)
+                )
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+
+                setOnClickListener {
+                    action()
+                }
+            }
+
+        val iconView =
+            TextView(this).apply {
+
+                text = icon
+
+                textSize = 20f
+
+                gravity = Gravity.CENTER
+
+                setTextColor(
+                    if (selected) {
+                        Color.parseColor("#2563EB")
+                    } else {
+                        Color.parseColor("#777B84")
+                    }
+                )
+            }
+
+        item.addView(iconView)
+
+        val textView =
+            TextView(this).apply {
+
+                text = label
+
+                textSize = 11f
+
+                gravity = Gravity.CENTER
+
+                setTextColor(
+                    if (selected) {
+                        Color.parseColor("#2563EB")
+                    } else {
+                        Color.parseColor("#777B84")
+                    }
+                )
+            }
+
+        item.addView(textView)
+
+        return item
+    }
+
+    // =====================================================
+    // UI HELPERS
+    // =====================================================
+
+    private fun createCard(): LinearLayout {
+
+        return LinearLayout(this).apply {
+
+            orientation = LinearLayout.VERTICAL
+
+            setBackgroundResource(
+                R.drawable.settings_card_bg
+            )
+
+            setPadding(
+                dp(18),
+                dp(18),
+                dp(18),
+                dp(18)
+            )
+
+            elevation = dp(1).toFloat()
+        }
+    }
+
+    private fun createStatCard(
+        icon: String,
+        value: String,
+        label: String
+    ): LinearLayout {
+
+        val card = createCard()
+
+        card.setPadding(
+            dp(14),
+            dp(16),
+            dp(14),
+            dp(16)
+        )
+
+        val iconView =
+            TextView(this).apply {
+
+                text = icon
+
+                textSize = 20f
+            }
+
+        card.addView(iconView)
+
+        val valueView =
+            TextView(this).apply {
+
+                text = value
+
+                textSize = 23f
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+
+                setTextColor(
+                    Color.parseColor("#111318")
+                )
+
+                setPadding(
+                    0,
+                    dp(6),
+                    0,
+                    0
+                )
+            }
+
+        card.addView(valueView)
+
+        val labelView =
+            TextView(this).apply {
+
+                text = label
+
+                textSize = 12f
+
+                setTextColor(
+                    Color.parseColor("#737780")
+                )
+
+                setPadding(
+                    0,
+                    dp(2),
+                    0,
+                    0
+                )
+            }
+
+        card.addView(labelView)
+
+        return card
+    }
+
+    private fun createActionCard(
+        icon: String,
+        title: String,
+        description: String,
+        action: () -> Unit
+    ): LinearLayout {
+
+        val card = createCard()
+
+        card.orientation = LinearLayout.HORIZONTAL
+
+        card.gravity = Gravity.CENTER_VERTICAL
+
+        card.setOnClickListener {
+            action()
+        }
+
+        val iconView =
+            TextView(this).apply {
+
+                text = icon
+
+                textSize = 27f
+
+                gravity = Gravity.CENTER
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        dp(48),
+                        dp(48)
+                    )
+            }
+
+        card.addView(iconView)
+
+        val textContainer =
+            LinearLayout(this).apply {
+
+                orientation = LinearLayout.VERTICAL
+
+                setPadding(
+                    dp(14),
+                    0,
+                    0,
+                    0
+                )
 
                 layoutParams =
                     LinearLayout.LayoutParams(
@@ -270,11 +956,9 @@ class MainActivity : AppCompatActivity() {
         val titleView =
             TextView(this).apply {
 
-                text =
-                    "Farooqui App Lock"
+                text = title
 
-                textSize =
-                    22f
+                textSize = 16f
 
                 setTypeface(
                     null,
@@ -282,139 +966,104 @@ class MainActivity : AppCompatActivity() {
                 )
 
                 setTextColor(
-                    Color.BLACK
+                    Color.parseColor("#111318")
                 )
             }
 
-        titleContainer.addView(
-            titleView
-        )
+        textContainer.addView(titleView)
 
-        val statusView =
+        val descriptionView =
             TextView(this).apply {
 
-                text =
-                    "🛡 Protection Active"
+                text = description
 
-                textSize =
-                    12f
+                textSize = 12f
 
                 setTextColor(
-                    Color.parseColor("#34C759")
+                    Color.parseColor("#737780")
                 )
 
                 setPadding(
                     0,
-                    4,
+                    dp(3),
                     0,
                     0
                 )
             }
 
-        titleContainer.addView(
-            statusView
-        )
+        textContainer.addView(descriptionView)
 
-        headerLayout.addView(
-            titleContainer
-        )
+        card.addView(textContainer)
 
-        val btnSettings =
-            ImageView(this).apply {
-
-                setImageResource(
-                    R.drawable.ic_settings_lock
-                )
-
-                setPadding(
-                    12,
-                    12,
-                    12,
-                    12
-                )
-
-                setOnClickListener {
-
-                    startActivity(
-                        Intent(
-                            context,
-                            SettingsActivity::class.java
-                        )
-                    )
-                }
-            }
-
-        headerLayout.addView(
-            btnSettings
-        )
-
-        mainLayout.addView(
-            headerLayout
-        )
-
-        val subTitle =
+        val arrow =
             TextView(this).apply {
 
-                text =
-                    "Select Apps to Lock"
+                text = "›"
 
-                textSize =
-                    15f
-
-                setTypeface(
-                    null,
-                    android.graphics.Typeface.BOLD
-                )
+                textSize = 25f
 
                 setTextColor(
-                    Color.parseColor("#3A3A3C")
-                )
-
-                setPadding(
-                    32,
-                    24,
-                    32,
-                    12
+                    Color.parseColor("#A0A4AC")
                 )
             }
 
-        mainLayout.addView(
-            subTitle
-        )
+        card.addView(arrow)
 
-        gridView =
-            GridView(this).apply {
-
-                numColumns =
-                    2
-
-                horizontalSpacing =
-                    16
-
-                verticalSpacing =
-                    16
-
-                setPadding(
-                    24,
-                    0,
-                    24,
-                    24
-                )
-            }
-
-        mainLayout.addView(
-            gridView
-        )
-
-        setContentView(
-            mainLayout
-        )
-
-        loadInstalledApps()
+        return card
     }
 
-    private fun isAccessibilityServiceEnabled():
-            Boolean {
+    private fun createSectionTitle(
+        text: String
+    ): TextView {
+
+        return TextView(this).apply {
+
+            this.text = text
+
+            textSize = 19f
+
+            setTypeface(
+                null,
+                android.graphics.Typeface.BOLD
+            )
+
+            setTextColor(
+                Color.parseColor("#111318")
+            )
+
+            setPadding(
+                0,
+                dp(8),
+                0,
+                dp(12)
+            )
+        }
+    }
+
+    // =====================================================
+    // APP INFORMATION
+    // =====================================================
+
+    private fun getLaunchableAppsCount(): Int {
+
+        val pm = packageManager
+
+        return pm.getInstalledApplications(
+            PackageManager.GET_META_DATA
+        ).count { appInfo ->
+
+            appInfo.packageName != packageName &&
+                    pm.getLaunchIntentForPackage(
+                        appInfo.packageName
+                    ) != null
+        }
+    }
+
+    // =====================================================
+    // ACCESSIBILITY
+    // =====================================================
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
 
         val serviceId =
             "$packageName/${AppAccessibilityService::class.java.name}"
@@ -423,13 +1072,10 @@ class MainActivity : AppCompatActivity() {
             Settings.Secure.getString(
                 contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-            )
-                ?: return false
+            ) ?: return false
 
         val splitter =
-            TextUtils.SimpleStringSplitter(
-                ':'
-            )
+            TextUtils.SimpleStringSplitter(':')
 
         splitter.setString(
             enabledServicesSetting
@@ -455,13 +1101,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
-
         super.onResume()
 
-        if (
-            !isAccessibilityServiceEnabled()
-        ) {
-
+        if (!isAccessibilityServiceEnabled()) {
             showOneTimePermissionDialog()
         }
     }
@@ -469,15 +1111,11 @@ class MainActivity : AppCompatActivity() {
     private fun showOneTimePermissionDialog() {
 
         AlertDialog.Builder(this)
-            .setTitle(
-                "Enable Protection"
-            )
+            .setTitle("Enable Protection")
             .setMessage(
-                "To secure your apps with Farooqui App Lock, please enable Accessibility permission in settings."
+                "Farooqui App Lock needs Accessibility permission to detect when a protected app is opened. This permission is processed on your device for App Lock functionality."
             )
-            .setPositiveButton(
-                "Enable Now"
-            ) { _, _ ->
+            .setPositiveButton("Enable Now") { _, _ ->
 
                 startActivity(
                     Intent(
@@ -485,133 +1123,62 @@ class MainActivity : AppCompatActivity() {
                     )
                 )
             }
-            .setCancelable(false)
+            .setNegativeButton("Later", null)
             .show()
     }
 
-    private fun loadInstalledApps() {
+    // =====================================================
+    // REFRESH
+    // =====================================================
 
-        val pm =
-            packageManager
+    private fun refreshDashboard() {
 
-        val packages =
-            pm.getInstalledApplications(
-                PackageManager.GET_META_DATA
-            )
+        if (::rootLayout.isInitialized) {
 
-        val appList =
-            mutableListOf<AppModel>()
+            setupDashboard()
+        }
+    }
 
-        val lockedApps =
-            AppLockPreferences
-                .getLockedApps(this)
+    // =====================================================
+    // DIMENSION HELPERS
+    // =====================================================
 
-        for (app in packages) {
+    private fun dp(value: Int): Int {
 
-            if (
-                app.packageName ==
-                packageName
-            ) {
-                continue
-            }
+        return (
+                value *
+                        resources.displayMetrics.density
+                ).toInt()
+    }
 
-            val launchIntent =
-                pm.getLaunchIntentForPackage(
-                    app.packageName
-                )
+    private fun marginParams(
+        bottom: Int = 0
+    ): LinearLayout.LayoutParams {
 
-            if (launchIntent == null) {
-                continue
-            }
+        return LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
 
-            val appName =
-                try {
+            bottomMargin = dp(bottom)
+        }
+    }
 
-                    pm.getApplicationLabel(
-                        app
-                    ).toString()
+    private fun weightParams():
+            LinearLayout.LayoutParams {
 
-                } catch (e: Exception) {
+        return LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        ).apply {
 
-                    continue
-                }
-
-            val icon =
-                try {
-
-                    pm.getApplicationIcon(
-                        app
-                    )
-
-                } catch (e: Exception) {
-
-                    continue
-                }
-
-            appList.add(
-                AppModel(
-                    appName,
-                    app.packageName,
-                    icon,
-                    lockedApps.contains(
-                        app.packageName
-                    )
-                )
+            setMargins(
+                dp(4),
+                dp(4),
+                dp(4),
+                dp(4)
             )
         }
-
-        appList.sortBy {
-            it.appName.lowercase()
-        }
-
-        // Service ko persistent list do
-        AppAccessibilityService
-            .lockedAppsList =
-            lockedApps.toSet()
-
-        val adapter =
-            AppGridAdapter(
-                this,
-                appList
-            ) { app, isLocked ->
-
-                // PERMANENTLY save toggle
-                AppLockPreferences.setLocked(
-                    this,
-                    app.packageName,
-                    isLocked
-                )
-
-                if (isLocked) {
-
-                    Toast.makeText(
-                        this,
-                        "${app.appName} Locked",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                } else {
-
-                    AppAccessibilityService
-                        .clearSession(
-                            app.packageName
-                        )
-
-                    Toast.makeText(
-                        this,
-                        "${app.appName} Unlocked",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                AppAccessibilityService
-                    .lockedAppsList =
-                    AppLockPreferences
-                        .getLockedApps(this)
-                        .toSet()
-            }
-
-        gridView.adapter =
-            adapter
     }
 }
