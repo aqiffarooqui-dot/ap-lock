@@ -17,22 +17,24 @@ object SettingsManager {
     private const val KEY_INTRUDER_SELFIE =
         "intruder_selfie"
 
-    // 0 = Biometric every time
-    // 1 = Stay unlocked until phone is locked
+    private const val KEY_CALCULATOR_DISGUISE =
+        "calculator_disguise"
+
+    /*
+     * Biometric mode:
+     *
+     * 0 = Ask biometric every time
+     * 1 = Stay unlocked until phone is locked
+     */
     fun getBiometricMode(
         context: Context
     ): Int {
 
-        val prefs: SharedPreferences =
-            context.getSharedPreferences(
-                PREF_NAME,
-                Context.MODE_PRIVATE
+        return getPrefs(context)
+            .getInt(
+                KEY_BIOMETRIC_MODE,
+                0
             )
-
-        return prefs.getInt(
-            KEY_BIOMETRIC_MODE,
-            0
-        )
     }
 
     fun setBiometricMode(
@@ -40,13 +42,8 @@ object SettingsManager {
         mode: Int
     ) {
 
-        val prefs: SharedPreferences =
-            context.getSharedPreferences(
-                PREF_NAME,
-                Context.MODE_PRIVATE
-            )
-
-        prefs.edit()
+        getPrefs(context)
+            .edit()
             .putInt(
                 KEY_BIOMETRIC_MODE,
                 mode
@@ -54,22 +51,21 @@ object SettingsManager {
             .apply()
     }
 
+    /*
+     * Unlock behavior:
+     *
+     * 0 = Clear unlock when leaving the app
+     * 1 = Keep unlocked until screen lock
+     */
     fun getUnlockBehavior(
         context: Context
     ): Int {
 
-        val prefs: SharedPreferences =
-            context.getSharedPreferences(
-                PREF_NAME,
-                Context.MODE_PRIVATE
+        return getPrefs(context)
+            .getInt(
+                KEY_UNLOCK_BEHAVIOR,
+                1
             )
-
-        // Default:
-        // Stay unlocked until phone is locked
-        return prefs.getInt(
-            KEY_UNLOCK_BEHAVIOR,
-            1
-        )
     }
 
     fun setUnlockBehavior(
@@ -77,13 +73,8 @@ object SettingsManager {
         behavior: Int
     ) {
 
-        val prefs: SharedPreferences =
-            context.getSharedPreferences(
-                PREF_NAME,
-                Context.MODE_PRIVATE
-            )
-
-        prefs.edit()
+        getPrefs(context)
+            .edit()
             .putInt(
                 KEY_UNLOCK_BEHAVIOR,
                 behavior
@@ -91,21 +82,18 @@ object SettingsManager {
             .apply()
     }
 
+    /*
+     * Intruder selfie
+     */
     fun isIntruderSelfieEnabled(
         context: Context
     ): Boolean {
 
-        val prefs: SharedPreferences =
-            context.getSharedPreferences(
-                PREF_NAME,
-                Context.MODE_PRIVATE
+        return getPrefs(context)
+            .getBoolean(
+                KEY_INTRUDER_SELFIE,
+                true
             )
-
-        // Default = ON
-        return prefs.getBoolean(
-            KEY_INTRUDER_SELFIE,
-            true
-        )
     }
 
     fun setIntruderSelfieEnabled(
@@ -113,17 +101,50 @@ object SettingsManager {
         enabled: Boolean
     ) {
 
-        val prefs: SharedPreferences =
-            context.getSharedPreferences(
-                PREF_NAME,
-                Context.MODE_PRIVATE
-            )
-
-        prefs.edit()
+        getPrefs(context)
+            .edit()
             .putBoolean(
                 KEY_INTRUDER_SELFIE,
                 enabled
             )
             .apply()
+    }
+
+    /*
+     * Calculator disguise
+     */
+    fun isCalculatorDisguiseEnabled(
+        context: Context
+    ): Boolean {
+
+        return getPrefs(context)
+            .getBoolean(
+                KEY_CALCULATOR_DISGUISE,
+                false
+            )
+    }
+
+    fun setCalculatorDisguiseEnabled(
+        context: Context,
+        enabled: Boolean
+    ) {
+
+        getPrefs(context)
+            .edit()
+            .putBoolean(
+                KEY_CALCULATOR_DISGUISE,
+                enabled
+            )
+            .apply()
+    }
+
+    private fun getPrefs(
+        context: Context
+    ): SharedPreferences {
+
+        return context.getSharedPreferences(
+            PREF_NAME,
+            Context.MODE_PRIVATE
+        )
     }
 }
