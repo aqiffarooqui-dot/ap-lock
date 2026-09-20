@@ -11,13 +11,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
 
-data class AppModel(
-    val appName: String,
-    val packageName: String,
-    val icon: android.graphics.drawable.Drawable,
-    var isLocked: Boolean
-)
-
 class AppGridAdapter(
     private val context: Context,
     private val appList: List<AppModel>,
