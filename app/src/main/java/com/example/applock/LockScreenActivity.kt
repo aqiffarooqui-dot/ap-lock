@@ -17,65 +17,140 @@ import java.util.concurrent.Executor
 class LockScreenActivity : AppCompatActivity() {
 
     private var isUnlocked = false
+
     private var targetPackageName: String? = null
+
     private var failedAttempts = 0
 
     private lateinit var containerLayout: LinearLayout
+
     private lateinit var intruderHelper: IntruderCaptureHelper
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
+
         super.onCreate(savedInstanceState)
 
-        targetPackageName = intent.getStringExtra("PACKAGE_NAME")
-        intruderHelper = IntruderCaptureHelper(this)
+        targetPackageName =
+            intent.getStringExtra(
+                "PACKAGE_NAME"
+            )
 
-        containerLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#1C1C1E"))
-            gravity = Gravity.CENTER
-            setPadding(48, 48, 48, 48)
-        }
+        intruderHelper =
+            IntruderCaptureHelper(this)
 
-        setContentView(containerLayout)
+        containerLayout =
+            LinearLayout(this).apply {
+
+                orientation =
+                    LinearLayout.VERTICAL
+
+                setBackgroundColor(
+                    Color.parseColor("#1C1C1E")
+                )
+
+                gravity =
+                    Gravity.CENTER
+
+                setPadding(
+                    48,
+                    48,
+                    48,
+                    48
+                )
+            }
+
+        setContentView(
+            containerLayout
+        )
 
         showBiometricPrompt()
     }
 
     private fun showBiometricPrompt() {
+
         containerLayout.removeAllViews()
 
-        val title = TextView(this).apply {
-            text = "Farooqui App Lock"
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 16)
-        }
+        val title =
+            TextView(this).apply {
+
+                text =
+                    "Farooqui App Lock"
+
+                textSize = 24f
+
+                setTextColor(
+                    Color.WHITE
+                )
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+
+                gravity =
+                    Gravity.CENTER
+
+                setPadding(
+                    0,
+                    0,
+                    0,
+                    16
+                )
+            }
 
         containerLayout.addView(title)
 
-        val subtitle = TextView(this).apply {
-            text = "Verify identity to open app"
-            textSize = 14f
-            setTextColor(Color.parseColor("#8E8E93"))
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 32)
-        }
+        val subtitle =
+            TextView(this).apply {
 
-        containerLayout.addView(subtitle)
+                text =
+                    "Verify identity to open app"
 
-        val btnRetry = Button(this).apply {
-            text = "Tap to Unlock"
-            setBackgroundColor(Color.parseColor("#007AFF"))
-            setTextColor(Color.WHITE)
+                textSize = 14f
 
-            setOnClickListener {
-                triggerBiometric()
+                setTextColor(
+                    Color.parseColor("#8E8E93")
+                )
+
+                gravity =
+                    Gravity.CENTER
+
+                setPadding(
+                    0,
+                    0,
+                    0,
+                    32
+                )
             }
-        }
 
-        containerLayout.addView(btnRetry)
+        containerLayout.addView(
+            subtitle
+        )
+
+        val btnRetry =
+            Button(this).apply {
+
+                text =
+                    "Tap to Unlock"
+
+                setBackgroundColor(
+                    Color.parseColor("#007AFF")
+                )
+
+                setTextColor(
+                    Color.WHITE
+                )
+
+                setOnClickListener {
+                    triggerBiometric()
+                }
+            }
+
+        containerLayout.addView(
+            btnRetry
+        )
 
         triggerBiometric()
     }
@@ -83,74 +158,100 @@ class LockScreenActivity : AppCompatActivity() {
     private fun triggerBiometric() {
 
         val executor: Executor =
-            ContextCompat.getMainExecutor(this)
+            ContextCompat.getMainExecutor(
+                this
+            )
 
-        val biometricPrompt = BiometricPrompt(
-            this,
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
+        val biometricPrompt =
+            BiometricPrompt(
+                this,
+                executor,
+                object :
+                    BiometricPrompt.AuthenticationCallback() {
 
-                override fun onAuthenticationError(
-                    errorCode: Int,
-                    errString: CharSequence
-                ) {
-                    super.onAuthenticationError(
-                        errorCode,
-                        errString
-                    )
+                    override fun
+                        onAuthenticationError(
+                        errorCode: Int,
+                        errString: CharSequence
+                    ) {
 
-                    if (!isUnlocked) {
+                        super
+                            .onAuthenticationError(
+                                errorCode,
+                                errString
+                            )
+
+                        if (!isUnlocked) {
+
+                            failedAttempts++
+
+                            handleFailureAndIntruder()
+                        }
+                    }
+
+                    override fun
+                        onAuthenticationSucceeded(
+                        result:
+                        BiometricPrompt.AuthenticationResult
+                    ) {
+
+                        super
+                            .onAuthenticationSucceeded(
+                                result
+                            )
+
+                        unlockSuccess()
+                    }
+
+                    override fun
+                        onAuthenticationFailed() {
+
+                        super
+                            .onAuthenticationFailed()
+
                         failedAttempts++
+
+                        Toast.makeText(
+                            applicationContext,
+                            "Verification Failed ($failedAttempts/3)",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
                         handleFailureAndIntruder()
                     }
                 }
-
-                override fun onAuthenticationSucceeded(
-                    result: BiometricPrompt.AuthenticationResult
-                ) {
-                    super.onAuthenticationSucceeded(result)
-
-                    unlockSuccess()
-                }
-
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-
-                    failedAttempts++
-
-                    Toast.makeText(
-                        applicationContext,
-                        "Verification Failed ($failedAttempts/3)",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    handleFailureAndIntruder()
-                }
-            }
-        )
+            )
 
         val promptInfo =
             BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Farooqui App Lock")
-                .setSubtitle("Use your configured Biometric")
-                .setNegativeButtonText("Use PIN Fallback")
+                .setTitle(
+                    "Farooqui App Lock"
+                )
+                .setSubtitle(
+                    "Use your configured Biometric"
+                )
+                .setNegativeButtonText(
+                    "Use PIN Fallback"
+                )
                 .build()
 
-        biometricPrompt.authenticate(promptInfo)
+        biometricPrompt.authenticate(
+            promptInfo
+        )
     }
 
     private fun handleFailureAndIntruder() {
 
         try {
-            intruderHelper.captureIntruderPhoto()
+
+            intruderHelper
+                .captureIntruderPhoto()
+
         } catch (e: Exception) {
-            // Camera failure should not crash the lock screen
+
+            // Camera failure should not
+            // crash lock screen
         }
-
-        checkFallbackTrigger()
-    }
-
-    private fun checkFallbackTrigger() {
 
         if (failedAttempts >= 3) {
             showPinFallbackScreen()
@@ -161,90 +262,162 @@ class LockScreenActivity : AppCompatActivity() {
 
         containerLayout.removeAllViews()
 
-        val title = TextView(this).apply {
-            text = "Enter PIN Fallback"
-            textSize = 22f
-            setTextColor(Color.WHITE)
-            setTypeface(
-                null,
-                android.graphics.Typeface.BOLD
-            )
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 24)
-        }
+        val title =
+            TextView(this).apply {
+
+                text =
+                    "Enter PIN Fallback"
+
+                textSize = 22f
+
+                setTextColor(
+                    Color.WHITE
+                )
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+
+                gravity =
+                    Gravity.CENTER
+
+                setPadding(
+                    0,
+                    0,
+                    0,
+                    24
+                )
+            }
 
         containerLayout.addView(title)
 
-        val pinInput = EditText(this).apply {
-            hint = "Enter 4-digit PIN"
-            setHintTextColor(
-                Color.parseColor("#8E8E93")
-            )
-            setTextColor(Color.WHITE)
+        val pinInput =
+            EditText(this).apply {
 
-            inputType =
-                android.text.InputType.TYPE_CLASS_NUMBER or
-                        android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                hint =
+                    "Enter 4-digit PIN"
 
-            gravity = Gravity.CENTER
+                setHintTextColor(
+                    Color.parseColor("#8E8E93")
+                )
 
-            setBackgroundColor(
-                Color.parseColor("#2C2C2E")
-            )
+                setTextColor(
+                    Color.WHITE
+                )
 
-            setPadding(32, 32, 32, 32)
-        }
+                inputType =
+                    android.text.InputType.TYPE_CLASS_NUMBER or
+                    android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
 
-        containerLayout.addView(pinInput)
+                gravity =
+                    Gravity.CENTER
 
-        val btnSubmit = Button(this).apply {
+                setBackgroundColor(
+                    Color.parseColor("#2C2C2E")
+                )
 
-            text = "Unlock"
-
-            setBackgroundColor(
-                Color.parseColor("#34C759")
-            )
-
-            setTextColor(Color.WHITE)
-
-            setOnClickListener {
-
-                if (pinInput.text.toString() == "1234") {
-
-                    unlockSuccess()
-
-                } else {
-
-                    failedAttempts++
-
-                    try {
-                        intruderHelper.captureIntruderPhoto()
-                    } catch (e: Exception) {
-                        // Ignore camera errors
-                    }
-
-                    Toast.makeText(
-                        context,
-                        "Incorrect PIN!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                setPadding(
+                    32,
+                    32,
+                    32,
+                    32
+                )
             }
 
-            setPadding(0, 24, 0, 24)
-        }
+        containerLayout.addView(
+            pinInput
+        )
 
-        containerLayout.addView(btnSubmit)
+        val btnSubmit =
+            Button(this).apply {
+
+                text =
+                    "Unlock"
+
+                setBackgroundColor(
+                    Color.parseColor("#34C759")
+                )
+
+                setTextColor(
+                    Color.WHITE
+                )
+
+                setOnClickListener {
+
+                    if (
+                        pinInput
+                            .text
+                            .toString() == "1234"
+                    ) {
+
+                        unlockSuccess()
+
+                    } else {
+
+                        failedAttempts++
+
+                        try {
+                            intruderHelper
+                                .captureIntruderPhoto()
+                        } catch (e: Exception) {
+                            // Ignore
+                        }
+
+                        Toast.makeText(
+                            context,
+                            "Incorrect PIN!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                setPadding(
+                    0,
+                    24,
+                    0,
+                    24
+                )
+            }
+
+        containerLayout.addView(
+            btnSubmit
+        )
     }
 
     private fun unlockSuccess() {
 
         isUnlocked = true
 
-        targetPackageName?.let { packageName ->
-            AppAccessibilityService.setSessionUnlocked(
-                packageName
-            )
+        val packageName =
+            targetPackageName
+
+        if (packageName != null) {
+
+            val behavior =
+                SettingsManager
+                    .getUnlockBehavior(
+                        this
+                    )
+
+            // Mode 1:
+            // phone lock hone tak unlocked
+            if (behavior == 1) {
+
+                AppAccessibilityService
+                    .setSessionUnlocked(
+                        packageName
+                    )
+
+            } else {
+
+                // Mode 0:
+                // next launch par biometric
+                AppAccessibilityService
+                    .clearSession(
+                        packageName
+                    )
+            }
         }
 
         Toast.makeText(
@@ -253,21 +426,68 @@ class LockScreenActivity : AppCompatActivity() {
             Toast.LENGTH_SHORT
         ).show()
 
+        launchTargetApp()
+    }
+
+    private fun launchTargetApp() {
+
+        val packageName =
+            targetPackageName
+
+        if (packageName == null) {
+            finish()
+            return
+        }
+
+        try {
+
+            val launchIntent =
+                packageManager
+                    .getLaunchIntentForPackage(
+                        packageName
+                    )
+
+            if (launchIntent != null) {
+
+                launchIntent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                )
+
+                startActivity(
+                    launchIntent
+                )
+            }
+
+        } catch (e: Exception) {
+
+            Toast.makeText(
+                this,
+                "Unable to open app",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
         finish()
     }
 
     private fun goToHome() {
 
         val homeIntent =
-            Intent(Intent.ACTION_MAIN).apply {
+            Intent(
+                Intent.ACTION_MAIN
+            ).apply {
 
-                addCategory(Intent.CATEGORY_HOME)
+                addCategory(
+                    Intent.CATEGORY_HOME
+                )
 
                 flags =
                     Intent.FLAG_ACTIVITY_NEW_TASK
             }
 
-        startActivity(homeIntent)
+        startActivity(
+            homeIntent
+        )
 
         finish()
     }
@@ -275,8 +495,11 @@ class LockScreenActivity : AppCompatActivity() {
     override fun onBackPressed() {
 
         if (!isUnlocked) {
+
             goToHome()
+
         } else {
+
             super.onBackPressed()
         }
     }
