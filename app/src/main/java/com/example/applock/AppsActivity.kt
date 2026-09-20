@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.AbsListView
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.EditText
