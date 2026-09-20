@@ -8,7 +8,6 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -30,7 +29,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setupDashboard()
     }
 
@@ -63,16 +61,22 @@ class MainActivity : AppCompatActivity() {
 
         authenticating = true
 
-        val biometricManager = BiometricManager.from(this)
+        val biometricManager =
+            BiometricManager.from(this)
 
         val authenticators =
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
                     BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
         val canAuthenticate =
-            biometricManager.canAuthenticate(authenticators)
+            biometricManager.canAuthenticate(
+                authenticators
+            )
 
-        if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
+        if (
+            canAuthenticate !=
+            BiometricManager.BIOMETRIC_SUCCESS
+        ) {
 
             authenticating = false
             showSecuritySetupDialog()
@@ -86,12 +90,17 @@ class MainActivity : AppCompatActivity() {
             BiometricPrompt(
                 this,
                 executor,
-                object : BiometricPrompt.AuthenticationCallback() {
+                object :
+                    BiometricPrompt.AuthenticationCallback() {
 
                     override fun onAuthenticationSucceeded(
-                        result: BiometricPrompt.AuthenticationResult
+                        result:
+                        BiometricPrompt.AuthenticationResult
                     ) {
-                        super.onAuthenticationSucceeded(result)
+
+                        super.onAuthenticationSucceeded(
+                            result
+                        )
 
                         authenticating = false
                         authenticated = true
@@ -104,6 +113,7 @@ class MainActivity : AppCompatActivity() {
                         errorCode: Int,
                         errString: CharSequence
                     ) {
+
                         super.onAuthenticationError(
                             errorCode,
                             errString
@@ -124,6 +134,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     override fun onAuthenticationFailed() {
+
                         super.onAuthenticationFailed()
 
                         Toast.makeText(
@@ -139,10 +150,14 @@ class MainActivity : AppCompatActivity() {
             BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Farooqui App Lock")
                 .setSubtitle("Unlock App Lock")
-                .setAllowedAuthenticators(authenticators)
+                .setAllowedAuthenticators(
+                    authenticators
+                )
                 .build()
 
-        biometricPrompt.authenticate(promptInfo)
+        biometricPrompt.authenticate(
+            promptInfo
+        )
     }
 
     private fun showSecuritySetupDialog() {
@@ -152,7 +167,9 @@ class MainActivity : AppCompatActivity() {
             .setMessage(
                 "Please set a fingerprint, face unlock, PIN, password or pattern on your phone before using Farooqui App Lock."
             )
-            .setPositiveButton("Open Security Settings") { _, _ ->
+            .setPositiveButton(
+                "Open Security Settings"
+            ) { _, _ ->
 
                 try {
 
@@ -171,7 +188,9 @@ class MainActivity : AppCompatActivity() {
                     ).show()
                 }
             }
-            .setNegativeButton("Close") { _, _ ->
+            .setNegativeButton(
+                "Close"
+            ) { _, _ ->
                 finish()
             }
             .setCancelable(false)
@@ -187,7 +206,8 @@ class MainActivity : AppCompatActivity() {
         rootLayout =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.VERTICAL
+                orientation =
+                    LinearLayout.VERTICAL
 
                 setBackgroundColor(
                     Color.parseColor("#F6F7FB")
@@ -196,14 +216,14 @@ class MainActivity : AppCompatActivity() {
 
         val scrollView =
             ScrollView(this).apply {
-
                 isFillViewport = true
             }
 
         val content =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.VERTICAL
+                orientation =
+                    LinearLayout.VERTICAL
 
                 setPadding(
                     dp(20),
@@ -213,16 +233,18 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-        // -------------------------------------------------
+        // =================================================
         // HEADER
-        // -------------------------------------------------
+        // =================================================
 
         val header =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.HORIZONTAL
+                orientation =
+                    LinearLayout.HORIZONTAL
 
-                gravity = Gravity.CENTER_VERTICAL
+                gravity =
+                    Gravity.CENTER_VERTICAL
 
                 setPadding(
                     0,
@@ -235,7 +257,8 @@ class MainActivity : AppCompatActivity() {
         val titleContainer =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.VERTICAL
+                orientation =
+                    LinearLayout.VERTICAL
 
                 layoutParams =
                     LinearLayout.LayoutParams(
@@ -248,9 +271,11 @@ class MainActivity : AppCompatActivity() {
         val title =
             TextView(this).apply {
 
-                text = "Farooqui App Lock"
+                text =
+                    "Farooqui App Lock"
 
-                textSize = 26f
+                textSize =
+                    26f
 
                 setTextColor(
                     Color.parseColor("#111318")
@@ -267,9 +292,11 @@ class MainActivity : AppCompatActivity() {
         val subtitle =
             TextView(this).apply {
 
-                text = "Your privacy, protected."
+                text =
+                    "Your privacy, protected."
 
-                textSize = 14f
+                textSize =
+                    14f
 
                 setTextColor(
                     Color.parseColor("#737780")
@@ -284,17 +311,19 @@ class MainActivity : AppCompatActivity() {
             }
 
         titleContainer.addView(subtitle)
-
         header.addView(titleContainer)
 
         val settingsButton =
             TextView(this).apply {
 
-                text = "⚙"
+                text =
+                    "⚙"
 
-                textSize = 25f
+                textSize =
+                    25f
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
 
                 setTextColor(
                     Color.parseColor("#2563EB")
@@ -306,6 +335,9 @@ class MainActivity : AppCompatActivity() {
                     dp(8),
                     dp(8)
                 )
+
+                contentDescription =
+                    "Settings"
 
                 setOnClickListener {
 
@@ -319,32 +351,43 @@ class MainActivity : AppCompatActivity() {
             }
 
         header.addView(settingsButton)
-
         content.addView(header)
 
-        // -------------------------------------------------
+        // =================================================
         // PROTECTION CARD
-        // -------------------------------------------------
+        // =================================================
 
         val protectionCard =
             createCard()
 
+        val accessibilityEnabled =
+            isAccessibilityServiceEnabled()
+
         val protectionHeader =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.HORIZONTAL
+                orientation =
+                    LinearLayout.HORIZONTAL
 
-                gravity = Gravity.CENTER_VERTICAL
+                gravity =
+                    Gravity.CENTER_VERTICAL
             }
 
         val shield =
             TextView(this).apply {
 
-                text = "🛡️"
+                text =
+                    if (accessibilityEnabled) {
+                        "🛡️"
+                    } else {
+                        "⚠️"
+                    }
 
-                textSize = 34f
+                textSize =
+                    34f
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
             }
 
         protectionHeader.addView(
@@ -358,7 +401,8 @@ class MainActivity : AppCompatActivity() {
         val protectionText =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.VERTICAL
+                orientation =
+                    LinearLayout.VERTICAL
 
                 setPadding(
                     dp(14),
@@ -378,9 +422,15 @@ class MainActivity : AppCompatActivity() {
         val protectionTitle =
             TextView(this).apply {
 
-                text = "Protection Active"
+                text =
+                    if (accessibilityEnabled) {
+                        "Protection Active"
+                    } else {
+                        "Protection Setup Required"
+                    }
 
-                textSize = 18f
+                textSize =
+                    18f
 
                 setTextColor(
                     Color.parseColor("#111318")
@@ -392,22 +442,25 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-        protectionText.addView(protectionTitle)
+        protectionText.addView(
+            protectionTitle
+        )
 
         val protectionStatus =
             TextView(this).apply {
 
                 text =
-                    if (isAccessibilityServiceEnabled()) {
+                    if (accessibilityEnabled) {
                         "App Lock service is running"
                     } else {
-                        "Action required: Enable Accessibility"
+                        "Enable Accessibility to protect apps"
                     }
 
-                textSize = 13f
+                textSize =
+                    13f
 
                 setTextColor(
-                    if (isAccessibilityServiceEnabled()) {
+                    if (accessibilityEnabled) {
                         Color.parseColor("#16803C")
                     } else {
                         Color.parseColor("#C2410C")
@@ -422,23 +475,30 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-        protectionText.addView(protectionStatus)
+        protectionText.addView(
+            protectionStatus
+        )
 
-        protectionHeader.addView(protectionText)
+        protectionHeader.addView(
+            protectionText
+        )
 
-        protectionCard.addView(protectionHeader)
+        protectionCard.addView(
+            protectionHeader
+        )
 
         val protectionAction =
             TextView(this).apply {
 
                 text =
-                    if (isAccessibilityServiceEnabled()) {
+                    if (accessibilityEnabled) {
                         "Protection is ready"
                     } else {
                         "Enable Protection →"
                     }
 
-                textSize = 13f
+                textSize =
+                    13f
 
                 setTextColor(
                     Color.parseColor("#2563EB")
@@ -453,7 +513,9 @@ class MainActivity : AppCompatActivity() {
 
                 setOnClickListener {
 
-                    if (!isAccessibilityServiceEnabled()) {
+                    if (
+                        !isAccessibilityServiceEnabled()
+                    ) {
 
                         startActivity(
                             Intent(
@@ -464,22 +526,18 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-        protectionCard.addView(protectionAction)
+        protectionCard.addView(
+            protectionAction
+        )
 
         content.addView(
             protectionCard,
             marginParams(bottom = 16)
         )
 
-        // -------------------------------------------------
+        // =================================================
         // STATISTICS
-        // -------------------------------------------------
-
-        val statsRow =
-            LinearLayout(this).apply {
-
-                orientation = LinearLayout.HORIZONTAL
-            }
+        // =================================================
 
         val lockedCount =
             AppLockPreferences
@@ -488,6 +546,20 @@ class MainActivity : AppCompatActivity() {
 
         val installedCount =
             getLaunchableAppsCount()
+
+        val intrusionCount =
+            IntrusionManager
+                .getTotalAttempts(this)
+
+        val todayIntrusions =
+            IntrusionManager
+                .getTodayAttempts(this)
+
+        val statsRow =
+            LinearLayout(this).apply {
+                orientation =
+                    LinearLayout.HORIZONTAL
+            }
 
         statsRow.addView(
             createStatCard(
@@ -514,15 +586,19 @@ class MainActivity : AppCompatActivity() {
 
         val secondStatsRow =
             LinearLayout(this).apply {
-
-                orientation = LinearLayout.HORIZONTAL
+                orientation =
+                    LinearLayout.HORIZONTAL
             }
 
         secondStatsRow.addView(
             createStatCard(
                 "🚨",
-                "0",
-                "Intrusion Attempts"
+                intrusionCount.toString(),
+                if (todayIntrusions > 0) {
+                    "$todayIntrusions today"
+                } else {
+                    "Intrusion Attempts"
+                }
             ),
             weightParams()
         )
@@ -541,12 +617,14 @@ class MainActivity : AppCompatActivity() {
             marginParams(bottom = 20)
         )
 
-        // -------------------------------------------------
+        // =================================================
         // QUICK ACTIONS
-        // -------------------------------------------------
+        // =================================================
 
         content.addView(
-            createSectionTitle("Quick Actions")
+            createSectionTitle(
+                "Quick Actions"
+            )
         )
 
         content.addView(
@@ -616,7 +694,9 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
-        scrollView.addView(content)
+        scrollView.addView(
+            content
+        )
 
         rootLayout.addView(
             scrollView,
@@ -626,10 +706,6 @@ class MainActivity : AppCompatActivity() {
                 1f
             )
         )
-
-        // -------------------------------------------------
-        // BOTTOM NAVIGATION
-        // -------------------------------------------------
 
         rootLayout.addView(
             createBottomNavigation()
@@ -642,16 +718,21 @@ class MainActivity : AppCompatActivity() {
     // BOTTOM NAVIGATION
     // =====================================================
 
-    private fun createBottomNavigation(): LinearLayout {
+    private fun createBottomNavigation():
+            LinearLayout {
 
         val navigation =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.HORIZONTAL
+                orientation =
+                    LinearLayout.HORIZONTAL
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
 
-                setBackgroundColor(Color.WHITE)
+                setBackgroundColor(
+                    Color.WHITE
+                )
 
                 setPadding(
                     dp(8),
@@ -660,7 +741,8 @@ class MainActivity : AppCompatActivity() {
                     dp(10)
                 )
 
-                elevation = dp(8).toFloat()
+                elevation =
+                    dp(8).toFloat()
             }
 
         navigation.addView(
@@ -732,9 +814,11 @@ class MainActivity : AppCompatActivity() {
         val item =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.VERTICAL
+                orientation =
+                    LinearLayout.VERTICAL
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
 
                 setPadding(
                     dp(12),
@@ -758,11 +842,14 @@ class MainActivity : AppCompatActivity() {
         val iconView =
             TextView(this).apply {
 
-                text = icon
+                text =
+                    icon
 
-                textSize = 20f
+                textSize =
+                    20f
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
 
                 setTextColor(
                     if (selected) {
@@ -778,11 +865,14 @@ class MainActivity : AppCompatActivity() {
         val textView =
             TextView(this).apply {
 
-                text = label
+                text =
+                    label
 
-                textSize = 11f
+                textSize =
+                    11f
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
 
                 setTextColor(
                     if (selected) {
@@ -802,11 +892,13 @@ class MainActivity : AppCompatActivity() {
     // UI HELPERS
     // =====================================================
 
-    private fun createCard(): LinearLayout {
+    private fun createCard():
+            LinearLayout {
 
         return LinearLayout(this).apply {
 
-            orientation = LinearLayout.VERTICAL
+            orientation =
+                LinearLayout.VERTICAL
 
             setBackgroundResource(
                 R.drawable.settings_card_bg
@@ -819,7 +911,8 @@ class MainActivity : AppCompatActivity() {
                 dp(18)
             )
 
-            elevation = dp(1).toFloat()
+            elevation =
+                dp(1).toFloat()
         }
     }
 
@@ -829,7 +922,8 @@ class MainActivity : AppCompatActivity() {
         label: String
     ): LinearLayout {
 
-        val card = createCard()
+        val card =
+            createCard()
 
         card.setPadding(
             dp(14),
@@ -841,9 +935,11 @@ class MainActivity : AppCompatActivity() {
         val iconView =
             TextView(this).apply {
 
-                text = icon
+                text =
+                    icon
 
-                textSize = 20f
+                textSize =
+                    20f
             }
 
         card.addView(iconView)
@@ -851,9 +947,11 @@ class MainActivity : AppCompatActivity() {
         val valueView =
             TextView(this).apply {
 
-                text = value
+                text =
+                    value
 
-                textSize = 23f
+                textSize =
+                    23f
 
                 setTypeface(
                     null,
@@ -877,9 +975,11 @@ class MainActivity : AppCompatActivity() {
         val labelView =
             TextView(this).apply {
 
-                text = label
+                text =
+                    label
 
-                textSize = 12f
+                textSize =
+                    12f
 
                 setTextColor(
                     Color.parseColor("#737780")
@@ -905,11 +1005,14 @@ class MainActivity : AppCompatActivity() {
         action: () -> Unit
     ): LinearLayout {
 
-        val card = createCard()
+        val card =
+            createCard()
 
-        card.orientation = LinearLayout.HORIZONTAL
+        card.orientation =
+            LinearLayout.HORIZONTAL
 
-        card.gravity = Gravity.CENTER_VERTICAL
+        card.gravity =
+            Gravity.CENTER_VERTICAL
 
         card.setOnClickListener {
             action()
@@ -918,11 +1021,14 @@ class MainActivity : AppCompatActivity() {
         val iconView =
             TextView(this).apply {
 
-                text = icon
+                text =
+                    icon
 
-                textSize = 27f
+                textSize =
+                    27f
 
-                gravity = Gravity.CENTER
+                gravity =
+                    Gravity.CENTER
 
                 layoutParams =
                     LinearLayout.LayoutParams(
@@ -936,7 +1042,8 @@ class MainActivity : AppCompatActivity() {
         val textContainer =
             LinearLayout(this).apply {
 
-                orientation = LinearLayout.VERTICAL
+                orientation =
+                    LinearLayout.VERTICAL
 
                 setPadding(
                     dp(14),
@@ -956,9 +1063,11 @@ class MainActivity : AppCompatActivity() {
         val titleView =
             TextView(this).apply {
 
-                text = title
+                text =
+                    title
 
-                textSize = 16f
+                textSize =
+                    16f
 
                 setTypeface(
                     null,
@@ -970,14 +1079,18 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-        textContainer.addView(titleView)
+        textContainer.addView(
+            titleView
+        )
 
         val descriptionView =
             TextView(this).apply {
 
-                text = description
+                text =
+                    description
 
-                textSize = 12f
+                textSize =
+                    12f
 
                 setTextColor(
                     Color.parseColor("#737780")
@@ -991,16 +1104,22 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-        textContainer.addView(descriptionView)
+        textContainer.addView(
+            descriptionView
+        )
 
-        card.addView(textContainer)
+        card.addView(
+            textContainer
+        )
 
         val arrow =
             TextView(this).apply {
 
-                text = "›"
+                text =
+                    "›"
 
-                textSize = 25f
+                textSize =
+                    25f
 
                 setTextColor(
                     Color.parseColor("#A0A4AC")
@@ -1018,9 +1137,11 @@ class MainActivity : AppCompatActivity() {
 
         return TextView(this).apply {
 
-            this.text = text
+            this.text =
+                text
 
-            textSize = 19f
+            textSize =
+                19f
 
             setTypeface(
                 null,
@@ -1046,24 +1167,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun getLaunchableAppsCount(): Int {
 
-        val pm = packageManager
+        val pm =
+            packageManager
 
-        return pm.getInstalledApplications(
-            PackageManager.GET_META_DATA
-        ).count { appInfo ->
+        return pm
+            .getInstalledApplications(
+                PackageManager.GET_META_DATA
+            )
+            .count { appInfo ->
 
-            appInfo.packageName != packageName &&
-                    pm.getLaunchIntentForPackage(
-                        appInfo.packageName
-                    ) != null
-        }
+                appInfo.packageName != packageName &&
+                        pm.getLaunchIntentForPackage(
+                            appInfo.packageName
+                        ) != null
+            }
     }
 
     // =====================================================
     // ACCESSIBILITY
     // =====================================================
 
-    private fun isAccessibilityServiceEnabled(): Boolean {
+    private fun isAccessibilityServiceEnabled():
+            Boolean {
 
         val serviceId =
             "$packageName/${AppAccessibilityService::class.java.name}"
@@ -1101,6 +1226,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
+
         super.onResume()
 
         if (!isAccessibilityServiceEnabled()) {
@@ -1111,11 +1237,15 @@ class MainActivity : AppCompatActivity() {
     private fun showOneTimePermissionDialog() {
 
         AlertDialog.Builder(this)
-            .setTitle("Enable Protection")
+            .setTitle(
+                "Enable Protection"
+            )
             .setMessage(
                 "Farooqui App Lock needs Accessibility permission to detect when a protected app is opened. This permission is processed on your device for App Lock functionality."
             )
-            .setPositiveButton("Enable Now") { _, _ ->
+            .setPositiveButton(
+                "Enable Now"
+            ) { _, _ ->
 
                 startActivity(
                     Intent(
@@ -1123,7 +1253,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 )
             }
-            .setNegativeButton("Later", null)
+            .setNegativeButton(
+                "Later",
+                null
+            )
             .show()
     }
 
@@ -1134,7 +1267,6 @@ class MainActivity : AppCompatActivity() {
     private fun refreshDashboard() {
 
         if (::rootLayout.isInitialized) {
-
             setupDashboard()
         }
     }
@@ -1143,12 +1275,14 @@ class MainActivity : AppCompatActivity() {
     // DIMENSION HELPERS
     // =====================================================
 
-    private fun dp(value: Int): Int {
+    private fun dp(
+        value: Int
+    ): Int {
 
         return (
-                value *
-                        resources.displayMetrics.density
-                ).toInt()
+            value *
+                    resources.displayMetrics.density
+        ).toInt()
     }
 
     private fun marginParams(
@@ -1160,7 +1294,8 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply {
 
-            bottomMargin = dp(bottom)
+            bottomMargin =
+                dp(bottom)
         }
     }
 
