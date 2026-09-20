@@ -1,21 +1,12 @@
 package com.example.applock
 
-content.Context
-graphics.Bitmap
-graphics.BitmapFactory
-hardware.camera2.CameraCharacteristics
-hardware.camera2.CameraManager
-os.Environment
-os.Handler
-os.Looper
-provider.MediaStore
-view.Surface
-view.WindowManager
-widget.Toast
-hardware.Camera
-io.File
-io.FileOutputStream
-util.Log
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.hardware.Camera
+import android.util.Log
+import java.io.File
+import java.io.FileOutputStream
 
 class IntruderCaptureHelper(private val context: Context) {
 
