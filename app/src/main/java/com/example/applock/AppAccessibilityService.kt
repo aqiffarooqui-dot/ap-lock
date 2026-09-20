@@ -1,33 +1,62 @@
 package com.example.applock
 
-accessibilityservice.AccessibilityService
-view.accessibility.AccessibilityNodeInfo
-content.Intent
-util.Log
-view.accessibility.AccessibilityEvent
+import android.accessibilityservice.AccessibilityService
+import android.content.Intent
+import android.util.Log
+import android.view.accessibility.AccessibilityEvent
 
 class AppAccessibilityService : AccessibilityService() {
 
     companion object {
-        var lockedAppsList: Set<String> = mutableSetOf()
+        var lockedAppsList: Set<String> = emptySet()
+
+        private val unlockedSessions = mutableSetOf<String>()
+
+        fun setSessionUnlocked(packageName: String) {
+            unlockedSessions.add(packageName)
+        }
+
+        fun isCurrentlyLocked(packageName: String): Boolean {
+            return lockedAppsList.contains(packageName) &&
+                    !unlockedSessions.contains(packageName)
+        }
+
+        fun clearSession(packageName: String) {
+            unlockedSessions.remove(packageName)
+        }
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent) {
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null) return
+
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val packageName = event.packageName?.toString() ?: return
 
-            // Check karo ki app locked list mein hai ya nahi
-            if (lockedAppsList.contains(packageName)) {
-                // Agar locked hai, toh Lock Activity launch karo
-                val intent = Intent(this, LockActivity::class.java).apply {
+            // Apne app ko dobara lock screen par mat bhejo
+            if (packageName == this.packageName) {
+                return
+            }
+
+            if (isCurrentlyLocked(packageName)) {
+
+                // Session ko clear karo jab locked app dobara open ho
+                clearSession(packageName)
+
+                val intent = Intent(this, LockScreenActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    putExtra("locked_package", packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra("PACKAGE_NAME", packageName)
                 }
+
                 try {
                     startActivity(intent)
                 } catch (e: Exception) {
-                    Log.e("AppLockService", "Error launching lock screen: ${e.message}")
+                    Log.e(
+                        "AppLockService",
+                        "Error launching lock screen",
+                        e
+                    )
                 }
             }
         }
