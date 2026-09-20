@@ -4,23 +4,27 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.core.content.ContextCompat
 
 class IntruderCaptureHelper(
     private val context: Context
 ) {
 
-    fun captureIntruderPhoto() {
+    fun captureIntruderPhoto(
+        onComplete: (Uri?) -> Unit
+    ) {
 
         if (
-            android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            androidx.core.content.ContextCompat.checkSelfPermission(
+            ContextCompat.checkSelfPermission(
                 context,
                 android.Manifest.permission.CAMERA
-            )
+            ) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
 
             Log.w(
@@ -28,10 +32,12 @@ class IntruderCaptureHelper(
                 "Camera permission is not granted"
             )
 
+            onComplete(null)
             return
         }
 
         var camera: Camera? = null
+        var surfaceTexture: SurfaceTexture? = null
 
         try {
 
@@ -40,21 +46,32 @@ class IntruderCaptureHelper(
                     Camera.CameraInfo.CAMERA_FACING_FRONT
                 )
 
-            camera.setPreviewTexture(
+            surfaceTexture =
                 SurfaceTexture(0)
+
+            camera.setPreviewTexture(
+                surfaceTexture
             )
 
             camera.startPreview()
 
-            camera.takePicture(
+            val activeCamera = camera
+
+            activeCamera.takePicture(
                 null,
                 null,
                 Camera.PictureCallback { data, _ ->
 
+                    var imageUri: Uri? = null
+
                     try {
 
                         if (data != null) {
-                            saveImageToGallery(data)
+
+                            imageUri =
+                                saveImageToGallery(
+                                    data
+                                )
                         }
 
                     } catch (e: Exception) {
@@ -67,7 +84,16 @@ class IntruderCaptureHelper(
 
                     } finally {
 
-                        releaseCamera(camera)
+                        releaseCamera(
+                            activeCamera
+                        )
+
+                        try {
+                            surfaceTexture?.release()
+                        } catch (_: Exception) {
+                        }
+
+                        onComplete(imageUri)
                     }
                 }
             )
@@ -81,6 +107,13 @@ class IntruderCaptureHelper(
             )
 
             releaseCamera(camera)
+
+            try {
+                surfaceTexture?.release()
+            } catch (_: Exception) {
+            }
+
+            onComplete(null)
         }
     }
 
@@ -101,7 +134,7 @@ class IntruderCaptureHelper(
 
     private fun saveImageToGallery(
         imageData: ByteArray
-    ) {
+    ): Uri? {
 
         val resolver =
             context.contentResolver
@@ -153,7 +186,7 @@ class IntruderCaptureHelper(
                 "Unable to create Gallery image"
             )
 
-            return
+            return null
         }
 
         try {
@@ -168,6 +201,9 @@ class IntruderCaptureHelper(
 
                 outputStream.flush()
             }
+                ?: throw Exception(
+                    "Unable to open Gallery output stream"
+                )
 
             if (
                 Build.VERSION.SDK_INT >=
@@ -196,6 +232,8 @@ class IntruderCaptureHelper(
                 "Intruder selfie saved: $fileName"
             )
 
+            return imageUri
+
         } catch (e: Exception) {
 
             try {
@@ -214,6 +252,8 @@ class IntruderCaptureHelper(
                 "Failed to save intruder selfie",
                 e
             )
+
+            return null
         }
     }
 }
