@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.applock">
 
-    <!-- Permissions -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -13,9 +21,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-        <!-- Welcome Activity (First launch intro - shows only once) -->
+        <!-- Activities and Services -->
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,84 +31,33 @@
             </intent-filter>
         </activity>
 
-        <!-- Main Dashboard Activity -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".AboutActivity" android:exported="false" />
+        <activity android:name=".WelcomeActivity" android:exported="false" />
 
-        <!-- Disguise Alias 1: Calculator Mode -->
-        <activity-alias
-            android:name=".CalculatorAlias"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="Calculator"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <!-- Disguise Alias 2: Notes Mode -->
-        <activity-alias
-            android:name=".NotesAlias"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="Notes"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <!-- Lock Screen Activity -->
-        <activity
-            android:name=".LockScreenActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
-        <!-- Settings Activity -->
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
-        <!-- About Activity -->
-        <activity
-            android:name=".AboutActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
-        <!-- Accessibility Service -->
         <service
             android:name=".AppAccessibilityService"
-            android:exported="true"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
             <meta-data
-                android:name="android.accessibilityservice.accessibility_service_config"
+                android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!-- Device Administrator Receiver for Uninstall Protection -->
         <receiver
             android:name=".MyDeviceAdminReceiver"
-            android:exported="true"
-            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
             <meta-data
                 android:name="android.app.device_admin"
-                android:resource="@xml/device_admin_receiver" />
+                android:resource="@xml/device_admin" />
             <intent-filter>
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
 
     </application>
-
 </manifest>
