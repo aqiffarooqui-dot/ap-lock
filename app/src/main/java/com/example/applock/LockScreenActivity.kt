@@ -21,11 +21,13 @@ class LockScreenActivity : AppCompatActivity() {
     private var failedAttempts = 0
 
     private lateinit var containerLayout: LinearLayout
+    private lateinit var intruderHelper: IntruderCaptureHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         targetPackageName = intent.getStringExtra("PACKAGE_NAME")
+        intruderHelper = IntruderCaptureHelper(this)
 
         containerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -80,7 +82,7 @@ class LockScreenActivity : AppCompatActivity() {
                     super.onAuthenticationError(errorCode, errString)
                     if (!isUnlocked) {
                         failedAttempts++
-                        checkFallbackTrigger()
+                        handleFailureAndIntruder()
                     }
                 }
 
@@ -93,7 +95,7 @@ class LockScreenActivity : AppCompatActivity() {
                     super.onAuthenticationFailed()
                     failedAttempts++
                     Toast.makeText(applicationContext, "Verification Failed ($failedAttempts/3)", Toast.LENGTH_SHORT).show()
-                    checkFallbackTrigger()
+                    handleFailureAndIntruder()
                 }
             })
 
@@ -104,6 +106,12 @@ class LockScreenActivity : AppCompatActivity() {
             .build()
 
         biometricPrompt.authenticate(promptInfo)
+    }
+
+    private fun handleFailureAndIntruder() {
+        // Agar biometric fail ho ya error aaye, toh intruder capture trigger karo
+        intruderHelper.captureIntruderPhoto()
+        checkFallbackTrigger()
     }
 
     private fun checkFallbackTrigger() {
@@ -145,6 +153,9 @@ class LockScreenActivity : AppCompatActivity() {
                 if (pinInput.text.toString() == "1234") {
                     unlockSuccess()
                 } else {
+                    failedAttempts++
+                    // Galat PIN dalne par bhi intruder selfie capture ho jayegi
+                    intruderHelper.captureIntruderPhoto()
                     Toast.makeText(context, "Incorrect PIN!", Toast.LENGTH_SHORT).show()
                 }
             }
