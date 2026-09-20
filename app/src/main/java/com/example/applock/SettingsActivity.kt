@@ -90,6 +90,87 @@ class SettingsActivity : AppCompatActivity() {
             setPadding(24, 16, 24, 16)
         }
 
+        // --- UNLOCK BEHAVIOR SECTION ---
+val unlockBehaviorTitle = TextView(this).apply {
+    text = "UNLOCK BEHAVIOR"
+    textSize = 13f
+    setTextColor(Color.parseColor("#6D6D72"))
+    setPadding(16, 32, 16, 8)
+}
+
+mainLayout.addView(
+    unlockBehaviorTitle
+)
+
+val unlockBehaviorCard =
+    LinearLayout(this).apply {
+
+        orientation =
+            LinearLayout.VERTICAL
+
+        setBackgroundResource(
+            R.drawable.settings_card_bg
+        )
+
+        setPadding(
+            24,
+            16,
+            24,
+            16
+        )
+    }
+
+val currentBehavior =
+    SettingsManager.getUnlockBehavior(
+        this
+    )
+
+val everyTimeRow =
+    createSettingRow(
+        "Ask biometric every time",
+        currentBehavior == 0
+    ) { checked ->
+
+        if (checked) {
+
+            SettingsManager.setUnlockBehavior(
+                this,
+                0
+            )
+        }
+    }
+
+unlockBehaviorCard.addView(
+    everyTimeRow
+)
+
+unlockBehaviorCard.addView(
+    createDivider()
+)
+
+val untilPhoneLockedRow =
+    createSettingRow(
+        "Stay unlocked until phone is locked",
+        currentBehavior == 1
+    ) { checked ->
+
+        if (checked) {
+
+            SettingsManager.setUnlockBehavior(
+                this,
+                1
+            )
+        }
+    }
+
+unlockBehaviorCard.addView(
+    untilPhoneLockedRow
+)
+
+mainLayout.addView(
+    unlockBehaviorCard
+)
+
         // Option 3: Disguise as Calculator Mode
         val optStealth = createSettingRow("Disguise Icon as Calculator", false) { isChecked ->
             if (isChecked) {
