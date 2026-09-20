@@ -1,14 +1,14 @@
 package com.example.applock
 
-content.Intent
-content.SharedPreferences
-graphics.Color
-os.Bundle
-view.Gravity
-widget.Button
-widget.LinearLayout
-widget.TextView
-appcompat.app.AppCompatActivity
+import android.content.Intent
+import android.content.SharedPreferences
+import android.graphics.Color
+import android.os.Bundle
+import android.view.Gravity
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 
 class WelcomeActivity : AppCompatActivity() {
 
