@@ -1,23 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.FarooquiAppLock" parent="Theme.Material3.DayNight.NoActionBar">
+    <style
+        name="Theme.FarooquiAppLock"
+        parent="Theme.Material3.DayNight.NoActionBar">
 
+        <!-- Typography -->
         <item name="android:fontFamily">sans</item>
-
         <item name="android:windowNoTitle">true</item>
 
+        <!-- Edge-to-edge -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
+        <!-- System bar appearance -->
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
 
+        <!-- Modern Android window behavior -->
         <item name="android:windowActionModeOverlay">true</item>
-
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
 
+        <!-- App colors -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorSecondary">@color/secondary</item>
+
+        <!-- Material 3 surfaces -->
+        <item name="colorSurface">@android:color/white</item>
+
+        <!-- Better touch feedback -->
+        <item name="android:windowEnableSplitTouch">true</item>
+
+        <!-- Disable legacy action bar -->
+        <item name="android:windowActionModeOverlay">true</item>
 
     </style>
 
