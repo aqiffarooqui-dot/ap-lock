@@ -1,6 +1,6 @@
 package com.example.applock
 
-import android.app.AppCompatDelegate
+import androidx.appcompat.app.AppCompatDelegate
 import android.content.Context
 
 object ThemeManager {
