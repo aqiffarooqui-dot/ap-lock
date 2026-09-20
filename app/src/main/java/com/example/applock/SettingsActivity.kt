@@ -169,10 +169,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         )
 
-        // =========================================================
-        // APP LOCK
-        // =========================================================
-
         addSectionTitle(
             root,
             "APP LOCK"
@@ -282,10 +278,6 @@ class SettingsActivity : AppCompatActivity() {
             behaviorCard,
             cardParams()
         )
-
-        // =========================================================
-        // APP RULES
-        // =========================================================
 
         val rulesCard =
             createCard()
@@ -414,10 +406,6 @@ class SettingsActivity : AppCompatActivity() {
             rulesCard,
             cardParams()
         )
-
-        // =========================================================
-        // SCHEDULE
-        // =========================================================
 
         addSectionTitle(
             root,
@@ -566,7 +554,7 @@ class SettingsActivity : AppCompatActivity() {
             createActionRow(
                 scheduleCard,
                 "🕐  Change schedule",
-                "Choose start and end times.",
+                "Choose start and end times."
             ) {
                 showScheduleEditor()
             }
@@ -576,10 +564,6 @@ class SettingsActivity : AppCompatActivity() {
             scheduleCard,
             cardParams()
         )
-
-        // =========================================================
-        // INTRUDER PROTECTION
-        // =========================================================
 
         addSectionTitle(
             root,
@@ -727,10 +711,6 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
-        // =========================================================
-        // NOTIFICATION PRIVACY
-        // =========================================================
-
         addSectionTitle(
             root,
             "NOTIFICATION PRIVACY"
@@ -837,10 +817,6 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
-        // =========================================================
-        // TRUSTED UNLOCK
-        // =========================================================
-
         addSectionTitle(
             root,
             "TRUSTED UNLOCK"
@@ -944,10 +920,6 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
-        // =========================================================
-        // DISGUISE
-        // =========================================================
-
         addSectionTitle(
             root,
             "DISGUISE"
@@ -1011,10 +983,6 @@ class SettingsActivity : AppCompatActivity() {
             disguiseCard,
             cardParams()
         )
-
-        // =========================================================
-        // APPEARANCE
-        // =========================================================
 
         addSectionTitle(
             root,
@@ -1091,10 +1059,6 @@ class SettingsActivity : AppCompatActivity() {
             appearanceCard,
             cardParams()
         )
-
-        // =========================================================
-        // DEVICE SECURITY
-        // =========================================================
 
         addSectionTitle(
             root,
@@ -1185,10 +1149,6 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
-        // =========================================================
-        // PRIVACY / SYSTEM
-        // =========================================================
-
         addSectionTitle(
             root,
             "PRIVACY & SYSTEM"
@@ -1245,10 +1205,6 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
-        // =========================================================
-        // TOOLS
-        // =========================================================
-
         addSectionTitle(
             root,
             "TOOLS"
@@ -1288,7 +1244,7 @@ class SettingsActivity : AppCompatActivity() {
                     this,
                     AboutActivity::class.java
                 )
-            )
+            }
         }
 
         root.addView(
@@ -1328,10 +1284,6 @@ class SettingsActivity : AppCompatActivity() {
         updateThemeStatus()
         updateTrustedStatus()
     }
-
-    // =============================================================
-    // SCHEDULE
-    // =============================================================
 
     private fun updateScheduleState() {
 
@@ -1473,10 +1425,6 @@ class SettingsActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // =============================================================
-    // INTRUDER SETTINGS
-    // =============================================================
-
     private fun showFailedAttemptDialog() {
 
         val current =
@@ -1528,10 +1476,6 @@ class SettingsActivity : AppCompatActivity() {
             )
             .show()
     }
-
-    // =============================================================
-    // NOTIFICATION PRIVACY
-    // =============================================================
 
     private fun isNotificationAccessGranted():
             Boolean {
@@ -1589,10 +1533,6 @@ class SettingsActivity : AppCompatActivity() {
                 )
         }
     }
-
-    // =============================================================
-    // TRUSTED UNLOCK
-    // =============================================================
 
     private fun updateTrustedStatus() {
 
@@ -1789,10 +1729,6 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    // =============================================================
-    // DECOY
-    // =============================================================
-
     private fun showDecoyDialog() {
 
         val modes =
@@ -1860,19 +1796,22 @@ class SettingsActivity : AppCompatActivity() {
                     }
 
                     2 -> {
-    DecoyManager.enableFakeCrash(this)
+                        DecoyManager.enableFakeCrash(this)
 
-    SettingsManager
-        .setCalculatorDisguiseEnabled(
-            this,
-            false
-        )
+                        SettingsManager
+                            .setCalculatorDisguiseEnabled(
+                                this,
+                                false
+                            )
 
-    DisguiseHelper.switchIcon(
-        this,
-        "normal"
-    )
-}
+                        DisguiseHelper.switchIcon(
+                            this,
+                            "normal"
+                        )
+                    }
+
+                    else -> Unit
+                }
 
                 logSetting(
                     "Decoy mode",
@@ -1887,10 +1826,6 @@ class SettingsActivity : AppCompatActivity() {
             )
             .show()
     }
-
-    // =============================================================
-    // APPEARANCE
-    // =============================================================
 
     private fun updateThemeStatus() {
 
@@ -1930,10 +1865,6 @@ class SettingsActivity : AppCompatActivity() {
 
         recreate()
     }
-
-    // =============================================================
-    // SCREEN SECURITY
-    // =============================================================
 
     private fun showScreenSecurityDialog() {
 
@@ -1976,10 +1907,6 @@ class SettingsActivity : AppCompatActivity() {
             )
             .show()
     }
-
-    // =============================================================
-    // SECURITY ACTIVITY
-    // =============================================================
 
     private fun showActivityDialog() {
 
@@ -2062,10 +1989,6 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    // =============================================================
-    // RESET
-    // =============================================================
-
     private fun confirmResetRules() {
 
         MaterialAlertDialogBuilder(this)
@@ -2126,10 +2049,6 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    // =============================================================
-    // LOGGING
-    // =============================================================
-
     private fun logSetting(
         title: String,
         details: String
@@ -2142,10 +2061,6 @@ class SettingsActivity : AppCompatActivity() {
             details
         )
     }
-
-    // =============================================================
-    // UI HELPERS
-    // =============================================================
 
     private fun createCard():
             MaterialCardView {
