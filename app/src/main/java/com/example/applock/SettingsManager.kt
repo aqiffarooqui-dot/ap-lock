@@ -5,28 +5,41 @@ import android.content.SharedPreferences
 
 object SettingsManager {
 
-    private const val PREF_NAME = "FarooquiAppLockPrefs"
+    private const val PREF_NAME =
+        "FarooquiAppLockPrefs"
 
-    private const val KEY_BIOMETRIC_MODE = "biometric_mode"
+    private const val KEY_BIOMETRIC_MODE =
+        "biometric_mode"
 
-    // 0 = Biometric every time app is opened
+    private const val KEY_UNLOCK_BEHAVIOR =
+        "unlock_behavior"
+
+    private const val KEY_INTRUDER_SELFIE =
+        "intruder_selfie"
+
+    // 0 = Biometric every time
     // 1 = Stay unlocked until phone is locked
-    private const val KEY_UNLOCK_BEHAVIOR = "unlock_behavior"
+    fun getBiometricMode(
+        context: Context
+    ): Int {
 
-    fun getBiometricMode(context: Context): Int {
         val prefs: SharedPreferences =
             context.getSharedPreferences(
                 PREF_NAME,
                 Context.MODE_PRIVATE
             )
 
-        return prefs.getInt(KEY_BIOMETRIC_MODE, 0)
+        return prefs.getInt(
+            KEY_BIOMETRIC_MODE,
+            0
+        )
     }
 
     fun setBiometricMode(
         context: Context,
         mode: Int
     ) {
+
         val prefs: SharedPreferences =
             context.getSharedPreferences(
                 PREF_NAME,
@@ -34,18 +47,25 @@ object SettingsManager {
             )
 
         prefs.edit()
-            .putInt(KEY_BIOMETRIC_MODE, mode)
+            .putInt(
+                KEY_BIOMETRIC_MODE,
+                mode
+            )
             .apply()
     }
 
-    fun getUnlockBehavior(context: Context): Int {
+    fun getUnlockBehavior(
+        context: Context
+    ): Int {
+
         val prefs: SharedPreferences =
             context.getSharedPreferences(
                 PREF_NAME,
                 Context.MODE_PRIVATE
             )
 
-        // Default = until phone is locked
+        // Default:
+        // Stay unlocked until phone is locked
         return prefs.getInt(
             KEY_UNLOCK_BEHAVIOR,
             1
@@ -56,6 +76,7 @@ object SettingsManager {
         context: Context,
         behavior: Int
     ) {
+
         val prefs: SharedPreferences =
             context.getSharedPreferences(
                 PREF_NAME,
@@ -66,6 +87,42 @@ object SettingsManager {
             .putInt(
                 KEY_UNLOCK_BEHAVIOR,
                 behavior
+            )
+            .apply()
+    }
+
+    fun isIntruderSelfieEnabled(
+        context: Context
+    ): Boolean {
+
+        val prefs: SharedPreferences =
+            context.getSharedPreferences(
+                PREF_NAME,
+                Context.MODE_PRIVATE
+            )
+
+        // Default = ON
+        return prefs.getBoolean(
+            KEY_INTRUDER_SELFIE,
+            true
+        )
+    }
+
+    fun setIntruderSelfieEnabled(
+        context: Context,
+        enabled: Boolean
+    ) {
+
+        val prefs: SharedPreferences =
+            context.getSharedPreferences(
+                PREF_NAME,
+                Context.MODE_PRIVATE
+            )
+
+        prefs.edit()
+            .putBoolean(
+                KEY_INTRUDER_SELFIE,
+                enabled
             )
             .apply()
     }
