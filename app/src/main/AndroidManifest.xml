@@ -39,6 +39,18 @@
         </activity>
 
         <activity
+            android:name=".AppsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SecurityActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".IntruderGalleryActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".SettingsActivity"
             android:exported="false" />
 
