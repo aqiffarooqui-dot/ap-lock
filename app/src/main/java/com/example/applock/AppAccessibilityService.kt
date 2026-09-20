@@ -36,9 +36,7 @@ class AppAccessibilityService : AccessibilityService() {
         fun clearSession(
             packageName: String
         ) {
-            unlockedSessions.remove(
-                packageName
-            )
+            unlockedSessions.remove(packageName)
         }
 
         fun clearAllSessions() {
@@ -55,7 +53,6 @@ class AppAccessibilityService : AccessibilityService() {
         fun clearLockScreenActive(
             packageName: String?
         ) {
-
             if (
                 packageName == null ||
                 activeLockScreenPackage == packageName
@@ -67,7 +64,6 @@ class AppAccessibilityService : AccessibilityService() {
         fun isLockScreenActive(
             packageName: String
         ): Boolean {
-
             return activeLockScreenPackage ==
                     packageName
         }
@@ -88,11 +84,6 @@ class AppAccessibilityService : AccessibilityService() {
 
                     Intent.ACTION_SCREEN_OFF -> {
 
-                        /*
-                         * Screen lock ends all temporary
-                         * unlocks and normal authentication
-                         * sessions.
-                         */
                         clearAllSessions()
 
                         context?.let {
@@ -105,7 +96,7 @@ class AppAccessibilityService : AccessibilityService() {
 
                         Log.d(
                             "AppLockService",
-                            "Screen locked - all sessions and temporary unlocks cleared"
+                            "Screen locked - sessions and temporary unlocks cleared"
                         )
                     }
 
@@ -190,7 +181,6 @@ class AppAccessibilityService : AccessibilityService() {
                 ?.toString()
                 ?: return
 
-        // Ignore Farooqui App Lock itself.
         if (packageName == this.packageName) {
             return
         }
@@ -206,12 +196,6 @@ class AppAccessibilityService : AccessibilityService() {
         /*
          * Mode 0:
          * Ask biometric every time.
-         *
-         * A normal authentication session is cleared
-         * when the user leaves the application.
-         *
-         * Temporary unlock is NOT cleared here because
-         * its own timer controls the unlock period.
          */
         if (
             previousPackage != null &&
@@ -234,18 +218,41 @@ class AppAccessibilityService : AccessibilityService() {
         lastForegroundPackage =
             packageName
 
-        // Current app is not locked.
-        if (
-            !lockedAppsList.contains(
+        /*
+         * Scheduled App Lock
+         *
+         * If scheduling is enabled and the current
+         * time is inside the configured protection
+         * window, the app is protected.
+         *
+         * Outside the schedule, normal manually
+         * locked apps continue to work normally.
+         */
+        val manuallyLocked =
+            lockedAppsList.contains(
                 packageName
             )
-        ) {
+
+        val scheduleActive =
+            ScheduledLockManager.isInsideSchedule(
+                this
+            )
+
+        /*
+         * At the moment scheduled mode acts as an
+         * additional protection layer for apps that
+         * are already selected as locked.
+         *
+         * This keeps the user's manual app selection
+         * as the source of truth and avoids locking
+         * every installed app unexpectedly.
+         */
+        if (!manuallyLocked) {
             return
         }
 
         /*
-         * Temporary unlock has priority over
-         * normal authentication.
+         * Temporary unlock has priority.
          */
         if (
             TemporaryUnlockManager
@@ -263,7 +270,22 @@ class AppAccessibilityService : AccessibilityService() {
             return
         }
 
-        // Already authenticated for this session.
+        /*
+         * If scheduled protection is active, the app
+         * must be authenticated unless a valid session
+         * or temporary unlock exists.
+         *
+         * Outside the schedule, manually locked apps
+         * are still protected as usual.
+         */
+        if (scheduleActive) {
+
+            Log.d(
+                "AppLockService",
+                "Scheduled protection active for: $packageName"
+            )
+        }
+
         if (
             isSessionUnlocked(
                 packageName
@@ -272,7 +294,6 @@ class AppAccessibilityService : AccessibilityService() {
             return
         }
 
-        // Lock screen is already visible.
         if (
             isLockScreenActive(
                 packageName
@@ -380,13 +401,10 @@ class AppAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
 
         try {
-
             unregisterReceiver(
                 screenReceiver
             )
-
         } catch (_: Exception) {
-            // Receiver may already be unregistered.
         }
 
         clearAllSessions()
