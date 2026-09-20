@@ -5,6 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
@@ -77,7 +79,7 @@ class AppAccessibilityService : AccessibilityService() {
 
                         Log.d(
                             "AppLockService",
-                            "Screen locked - sessions and temporary unlocks cleared"
+                            "Screen locked - all sessions cleared"
                         )
                     }
 
@@ -90,6 +92,29 @@ class AppAccessibilityService : AccessibilityService() {
                             "Screen turned on"
                         )
                     }
+
+                    Intent.ACTION_USER_UNLOCKED -> {
+
+                        if (
+                            AppLockRulesManager
+                                .isLockOnRestartEnabled(
+                                    this@AppAccessibilityService
+                                )
+                        ) {
+                            clearAllSessions()
+
+                            context?.let {
+                                TemporaryUnlockManager.clearAll(it)
+                            }
+                        }
+
+                        lastForegroundPackage = null
+
+                        Log.d(
+                            "AppLockService",
+                            "Device unlocked - security sessions refreshed"
+                        )
+                    }
                 }
             }
         }
@@ -98,10 +123,19 @@ class AppAccessibilityService : AccessibilityService() {
 
         super.onServiceConnected()
 
-        lockedAppsList =
-            AppLockPreferences
-                .getLockedApps(this)
-                .toSet()
+        refreshLockedApps()
+
+        /*
+         * On service restart/reconnection, old authentication
+         * sessions must not survive when Lock On Restart is enabled.
+         */
+        if (
+            AppLockRulesManager
+                .isLockOnRestartEnabled(this)
+        ) {
+            clearAllSessions()
+            TemporaryUnlockManager.clearAll(this)
+        }
 
         try {
 
@@ -115,12 +149,28 @@ class AppAccessibilityService : AccessibilityService() {
                     addAction(
                         Intent.ACTION_SCREEN_ON
                     )
+
+                    addAction(
+                        Intent.ACTION_USER_UNLOCKED
+                    )
                 }
 
-            registerReceiver(
-                screenReceiver,
-                filter
-            )
+            if (Build.VERSION.SDK_INT >= 33) {
+
+                registerReceiver(
+                    screenReceiver,
+                    filter,
+                    Context.RECEIVER_NOT_EXPORTED
+                )
+
+            } else {
+
+                @Suppress("DEPRECATION")
+                registerReceiver(
+                    screenReceiver,
+                    filter
+                )
+            }
 
         } catch (e: Exception) {
 
@@ -145,13 +195,14 @@ class AppAccessibilityService : AccessibilityService() {
             return
         }
 
-        val eventType = event.eventType
+        val eventType =
+            event.eventType
 
         if (
             eventType !=
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             eventType !=
-            AccessibilityEvent.TYPE_WINDOWS_CHANGED
+                AccessibilityEvent.TYPE_WINDOWS_CHANGED
         ) {
             return
         }
@@ -161,22 +212,27 @@ class AppAccessibilityService : AccessibilityService() {
                 ?.toString()
                 ?: return
 
-        // Ignore Farooqui App Lock itself.
-        if (packageName == this.packageName) {
+        /*
+         * Never lock Farooqui App Lock itself.
+         */
+        if (
+            packageName == this.packageName
+        ) {
             return
         }
 
-        lockedAppsList =
-            AppLockPreferences
-                .getLockedApps(this)
-                .toSet()
+        refreshLockedApps()
 
         val previousPackage =
             lastForegroundPackage
 
         /*
-         * Mode 0:
+         * MODE 0
+         *
          * Ask biometric every time.
+         *
+         * When user leaves a protected app, its normal
+         * authentication session is cleared.
          */
         if (
             previousPackage != null &&
@@ -188,63 +244,84 @@ class AppAccessibilityService : AccessibilityService() {
 
             Log.d(
                 "AppLockService",
-                "Cleared normal session for: $previousPackage"
+                "Normal session cleared: $previousPackage"
             )
         }
 
-        lastForegroundPackage = packageName
+        lastForegroundPackage =
+            packageName
 
         /*
-         * Manual app lock is the primary protection.
+         * Determine whether this package is protected.
          */
         val manuallyLocked =
             lockedAppsList.contains(packageName)
 
+        val groupLocked =
+            isLockedByGroup(packageName)
+
+        val appIsLocked =
+            manuallyLocked || groupLocked
+
+        if (!appIsLocked) {
+            return
+        }
+
         /*
-         * Scheduled App Lock is an additional condition.
+         * System application protection.
          *
-         * When scheduling is enabled, the selected app
-         * is protected only while the configured schedule
-         * is active.
-         *
-         * When scheduling is disabled, normal manual
-         * App Lock behavior continues unchanged.
+         * If system-app locking is disabled, a system package
+         * will not be intercepted even if it exists in the
+         * locked-app list.
          */
-        val scheduleEnabled =
-            ScheduledLockManager.isEnabled(this)
+        if (
+            isSystemApplication(packageName) &&
+            !AppLockRulesManager
+                .isSystemAppLockEnabled(this)
+        ) {
 
-        val scheduleActive =
-            ScheduledLockManager.isInsideSchedule(this)
+            clearSession(packageName)
 
-        val shouldProtect =
-            if (scheduleEnabled) {
-                manuallyLocked && scheduleActive
-            } else {
-                manuallyLocked
-            }
-
-        if (!shouldProtect) {
-
-            /*
-             * If we have moved outside a scheduled
-             * protection window, remove any normal
-             * authentication session so the next
-             * scheduled window starts cleanly.
-             */
-            if (
-                scheduleEnabled &&
-                manuallyLocked &&
-                !scheduleActive
-            ) {
-                clearSession(packageName)
-            }
+            Log.d(
+                "AppLockService",
+                "System app protection disabled: $packageName"
+            )
 
             return
         }
 
         /*
-         * Temporary unlock has priority over
-         * scheduled/manual protection.
+         * Scheduled App Lock.
+         *
+         * Schedule acts as an additional condition.
+         */
+        if (
+            ScheduledLockManager
+                .isEnabled(this)
+        ) {
+
+            val scheduleActive =
+                ScheduledLockManager
+                    .isInsideSchedule(this)
+
+            if (!scheduleActive) {
+
+                clearSession(packageName)
+
+                Log.d(
+                    "AppLockService",
+                    "Outside scheduled protection window: $packageName"
+                )
+
+                return
+            }
+        }
+
+        /*
+         * Temporary unlock has highest priority.
+         *
+         * It remains valid until its configured expiry
+         * or until the phone screen is locked.
          */
         if (
             TemporaryUnlockManager
@@ -256,31 +333,128 @@ class AppAccessibilityService : AccessibilityService() {
 
             Log.d(
                 "AppLockService",
-                "Temporary unlock active for: $packageName"
+                "Temporary unlock active: $packageName"
             )
 
             return
         }
 
         /*
-         * Already authenticated.
+         * Existing authenticated session.
+         *
+         * In "Stay unlocked until phone is locked" mode,
+         * this survives app switching and is cleared only
+         * when the phone screen is locked.
          */
         if (
             isSessionUnlocked(packageName)
         ) {
+
             return
         }
 
         /*
-         * Lock screen already visible.
+         * Prevent duplicate lock-screen activities.
          */
         if (
             isLockScreenActive(packageName)
         ) {
+
             return
         }
 
         openLockScreen(packageName)
+    }
+
+    private fun refreshLockedApps() {
+
+        lockedAppsList =
+            AppLockPreferences
+                .getLockedApps(this)
+                .toSet()
+    }
+
+    /*
+     * Group protection is combined with the normal
+     * AppLockPreferences list.
+     *
+     * A group contributes protection only when that
+     * particular group is marked as locked.
+     */
+    private fun isLockedByGroup(
+        packageName: String
+    ): Boolean {
+
+        val groups =
+            AppGroupManager
+                .getGroupsForApp(
+                    this,
+                    packageName
+                )
+
+        return groups.any { groupName ->
+            AppGroupManager
+                .isGroupLocked(
+                    this,
+                    groupName
+                )
+        }
+    }
+
+    private fun isSystemApplication(
+        packageName: String
+    ): Boolean {
+
+        return try {
+
+            val appInfo =
+                packageManager.getApplicationInfo(
+                    packageName,
+                    0
+                )
+
+            val isSystem =
+                (
+                    appInfo.flags and
+                        ApplicationInfo.FLAG_SYSTEM
+                ) != 0
+
+            val isUpdatedSystem =
+                (
+                    appInfo.flags and
+                        ApplicationInfo.FLAG_UPDATED_SYSTEM_APP
+                ) != 0
+
+            isSystem || isUpdatedSystem
+
+        } catch (_: Exception) {
+
+            false
+        }
+    }
+
+    private fun getApplicationDisplayName(
+        packageName: String
+    ): String {
+
+        return try {
+
+            val appInfo =
+                packageManager.getApplicationInfo(
+                    packageName,
+                    0
+                )
+
+            packageManager
+                .getApplicationLabel(
+                    appInfo
+                )
+                .toString()
+
+        } catch (_: Exception) {
+
+            packageName
+        }
     }
 
     private fun openLockScreen(
@@ -289,28 +463,14 @@ class AppAccessibilityService : AccessibilityService() {
 
         try {
 
-            setLockScreenActive(packageName)
+            setLockScreenActive(
+                packageName
+            )
 
             val appName =
-                try {
-
-                    val appInfo =
-                        packageManager
-                            .getApplicationInfo(
-                                packageName,
-                                0
-                            )
-
-                    packageManager
-                        .getApplicationLabel(
-                            appInfo
-                        )
-                        .toString()
-
-                } catch (e: Exception) {
-
+                getApplicationDisplayName(
                     packageName
-                }
+                )
 
             val intent =
                 Intent(
@@ -350,7 +510,9 @@ class AppAccessibilityService : AccessibilityService() {
 
         } catch (e: Exception) {
 
-            clearLockScreenActive(packageName)
+            clearLockScreenActive(
+                packageName
+            )
 
             Log.e(
                 "AppLockService",
@@ -361,15 +523,17 @@ class AppAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        // Required by AccessibilityService.
+        // AccessibilityService requirement.
     }
 
     override fun onDestroy() {
 
         try {
+
             unregisterReceiver(
                 screenReceiver
             )
+
         } catch (_: Exception) {
         }
 
