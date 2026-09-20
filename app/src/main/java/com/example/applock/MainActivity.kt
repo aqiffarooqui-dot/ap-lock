@@ -1,21 +1,20 @@
 package com.example.applock
 
-content.Intent
-content.pm.ApplicationInfo
-content.pm.PackageManager
-graphics.Color
-os.Bundle
-provider.Settings
-text.TextUtils
-view.Gravity
-widget.Button
-widget.GridView
-widget.ImageView
-widget.LinearLayout
-widget.TextView
-widget.Toast
-appcompat.app.AlertDialog
-appcompat.app.AppCompatActivity
+import android.content.Intent
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.os.Bundle
+import android.provider.Settings
+import android.text.TextUtils
+import android.view.Gravity
+import android.widget.GridView
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -70,12 +69,13 @@ class MainActivity : AppCompatActivity() {
         titleContainer.addView(statusView)
         headerLayout.addView(titleContainer)
 
-        // Settings Gear Icon (Placeholder for future Settings screen)
+        // Settings Gear Icon (Navigates to iOS Settings Screen)
         val btnSettings = ImageView(this).apply {
             setImageResource(android.R.drawable.ic_menu_manage)
             setPadding(12, 12, 12, 12)
             setOnClickListener {
-                Toast.makeText(context, "iOS Settings Screen coming up next!", Toast.LENGTH_SHORT).show()
+                val intent = Intent(context, SettingsActivity::class.java)
+                startActivity(intent)
             }
         }
         headerLayout.addView(btnSettings)
@@ -115,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         colonSplitter.setString(enabledServicesSetting)
         while (colonSplitter.hasNext()) {
             val componentName = colonSplitter.next()
-            if.equals(componentName, serviceId, ignoreCase = true)) {
+            if (componentName.equals(serviceId, ignoreCase = true)) {
                 return true
             }
         }
