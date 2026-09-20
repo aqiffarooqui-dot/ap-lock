@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import java.io.OutputStream
 
 class IntruderCaptureHelper(
     private val context: Context
@@ -16,13 +15,30 @@ class IntruderCaptureHelper(
 
     fun captureIntruderPhoto() {
 
+        if (
+            android.content.pm.PackageManager.PERMISSION_GRANTED !=
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.CAMERA
+            )
+        ) {
+
+            Log.w(
+                "IntruderCapture",
+                "Camera permission is not granted"
+            )
+
+            return
+        }
+
         var camera: Camera? = null
 
         try {
 
-            camera = Camera.open(
-                Camera.CameraInfo.CAMERA_FACING_FRONT
-            )
+            camera =
+                Camera.open(
+                    Camera.CameraInfo.CAMERA_FACING_FRONT
+                )
 
             camera.setPreviewTexture(
                 SurfaceTexture(0)
@@ -36,24 +52,22 @@ class IntruderCaptureHelper(
                 Camera.PictureCallback { data, _ ->
 
                     try {
-                        saveImageToGallery(data)
+
+                        if (data != null) {
+                            saveImageToGallery(data)
+                        }
+
                     } catch (e: Exception) {
+
                         Log.e(
                             "IntruderCapture",
                             "Error saving intruder selfie",
                             e
                         )
+
                     } finally {
 
-                        try {
-                            camera.stopPreview()
-                        } catch (_: Exception) {
-                        }
-
-                        try {
-                            camera.release()
-                        } catch (_: Exception) {
-                        }
+                        releaseCamera(camera)
                     }
                 }
             )
@@ -66,10 +80,22 @@ class IntruderCaptureHelper(
                 e
             )
 
-            try {
-                camera?.release()
-            } catch (_: Exception) {
-            }
+            releaseCamera(camera)
+        }
+    }
+
+    private fun releaseCamera(
+        camera: Camera?
+    ) {
+
+        try {
+            camera?.stopPreview()
+        } catch (_: Exception) {
+        }
+
+        try {
+            camera?.release()
+        } catch (_: Exception) {
         }
     }
 
@@ -77,7 +103,8 @@ class IntruderCaptureHelper(
         imageData: ByteArray
     ) {
 
-        val resolver = context.contentResolver
+        val resolver =
+            context.contentResolver
 
         val fileName =
             "Intruder_${System.currentTimeMillis()}.jpg"
@@ -131,12 +158,15 @@ class IntruderCaptureHelper(
 
         try {
 
-            val outputStream: OutputStream? =
-                resolver.openOutputStream(imageUri)
+            resolver.openOutputStream(
+                imageUri
+            )?.use { outputStream ->
 
-            outputStream?.use { stream ->
-                stream.write(imageData)
-                stream.flush()
+                outputStream.write(
+                    imageData
+                )
+
+                outputStream.flush()
             }
 
             if (
@@ -163,17 +193,19 @@ class IntruderCaptureHelper(
 
             Log.d(
                 "IntruderCapture",
-                "Intruder selfie saved to Gallery: $fileName"
+                "Intruder selfie saved: $fileName"
             )
 
         } catch (e: Exception) {
 
             try {
+
                 resolver.delete(
                     imageUri,
                     null,
                     null
                 )
+
             } catch (_: Exception) {
             }
 
