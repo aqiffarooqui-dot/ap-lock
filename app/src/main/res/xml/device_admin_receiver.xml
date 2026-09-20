@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <!-- Ye policy ensure karti hai ki app ko bina admin permission ke uninstall na kiya ja sake -->
+        <force-lock />
+    </uses-policies>
+</device-admin>
