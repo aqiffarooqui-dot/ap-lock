@@ -17,30 +17,43 @@ class AppAccessibilityService : AccessibilityService() {
         private val unlockedSessions =
             mutableSetOf<String>()
 
-        fun setSessionUnlocked(
-            packageName: String
-        ) {
+        private var activeLockScreenPackage: String? = null
+
+        fun setSessionUnlocked(packageName: String) {
             unlockedSessions.add(packageName)
         }
 
-        fun isSessionUnlocked(
-            packageName: String
-        ): Boolean {
-            return unlockedSessions.contains(
-                packageName
-            )
+        fun isSessionUnlocked(packageName: String): Boolean {
+            return unlockedSessions.contains(packageName)
         }
 
-        fun clearSession(
-            packageName: String
-        ) {
+        fun clearSession(packageName: String) {
             unlockedSessions.remove(packageName)
         }
 
         fun clearAllSessions() {
             unlockedSessions.clear()
         }
+
+        fun setLockScreenActive(packageName: String) {
+            activeLockScreenPackage = packageName
+        }
+
+        fun clearLockScreenActive(packageName: String?) {
+            if (
+                packageName == null ||
+                activeLockScreenPackage == packageName
+            ) {
+                activeLockScreenPackage = null
+            }
+        }
+
+        fun isLockScreenActive(packageName: String): Boolean {
+            return activeLockScreenPackage == packageName
+        }
     }
+
+    private var lastForegroundPackage: String? = null
 
     private val screenReceiver =
         object : BroadcastReceiver() {
@@ -50,13 +63,16 @@ class AppAccessibilityService : AccessibilityService() {
                 intent: Intent?
             ) {
 
-                if (intent?.action ==
+                if (
+                    intent?.action ==
                     Intent.ACTION_SCREEN_OFF
                 ) {
 
                     // Phone lock/screen off hone par
-                    // saare temporary unlock sessions clear
+                    // temporary unlock sessions clear.
                     clearAllSessions()
+
+                    lastForegroundPackage = null
 
                     Log.d(
                         "AppLockService",
@@ -67,12 +83,21 @@ class AppAccessibilityService : AccessibilityService() {
         }
 
     override fun onServiceConnected() {
+
         super.onServiceConnected()
+
+        // Service restart hone ke baad bhi
+        // saved locked apps load rahen.
+        lockedAppsList =
+            AppLockPreferences
+                .getLockedApps(this)
+                .toSet()
 
         try {
 
             val filter =
                 IntentFilter().apply {
+
                     addAction(
                         Intent.ACTION_SCREEN_OFF
                     )
@@ -101,39 +126,108 @@ class AppAccessibilityService : AccessibilityService() {
             return
         }
 
-        val eventType = event.eventType
+        val eventType =
+            event.eventType
 
-        // App/window change detect karo
         if (
             eventType !=
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             eventType !=
             AccessibilityEvent.TYPE_WINDOWS_CHANGED
         ) {
+
             return
         }
 
         val packageName =
-            event.packageName?.toString()
+            event.packageName
+                ?.toString()
                 ?: return
 
-        // Khud ke AppLock ko kabhi lock mat karo
-        if (packageName == this.packageName) {
+        // Apne App Lock ke events ignore karo.
+        if (
+            packageName ==
+            this.packageName
+        ) {
+
             return
         }
 
-        // Agar app lock list me nahi hai
-        // to kuch mat karo
-        if (!lockedAppsList.contains(packageName)) {
+        // Har event par persistent list refresh karo.
+        lockedAppsList =
+            AppLockPreferences
+                .getLockedApps(this)
+                .toSet()
+
+        /*
+         * MODE 0:
+         * Ask biometric every time.
+         *
+         * Is mode me app foreground se bahar
+         * jaate hi uska temporary session clear.
+         *
+         * MODE 1:
+         * Stay unlocked until phone is locked.
+         *
+         * Is mode me app switch/minimize par
+         * session clear nahi hoga.
+         */
+
+        val previousPackage =
+            lastForegroundPackage
+
+        if (
+            previousPackage != null &&
+            previousPackage != packageName &&
+            SettingsManager.getUnlockBehavior(
+                this
+            ) == 0
+        ) {
+
+            clearSession(
+                previousPackage
+            )
+        }
+
+        lastForegroundPackage =
+            packageName
+
+        if (
+            !lockedAppsList.contains(
+                packageName
+            )
+        ) {
+
             return
         }
 
-        // Agar current session me already unlocked hai
-        if (isSessionUnlocked(packageName)) {
+        // Already authenticated app.
+        if (
+            isSessionUnlocked(
+                packageName
+            )
+        ) {
+
             return
         }
 
-        openLockScreen(packageName)
+        /*
+         * Accessibility multiple events bhej sakta hai.
+         * Same app ke liye multiple biometric screens
+         * mat kholo.
+         */
+        if (
+            isLockScreenActive(
+                packageName
+            )
+        ) {
+
+            return
+        }
+
+        openLockScreen(
+            packageName
+        )
     }
 
     private fun openLockScreen(
@@ -141,6 +235,38 @@ class AppAccessibilityService : AccessibilityService() {
     ) {
 
         try {
+
+            setLockScreenActive(
+                packageName
+            )
+
+            val appInfo =
+                try {
+
+                    packageManager
+                        .getApplicationInfo(
+                            packageName,
+                            0
+                        )
+
+                } catch (e: Exception) {
+
+                    null
+                }
+
+            val appName =
+                if (appInfo != null) {
+
+                    packageManager
+                        .getApplicationLabel(
+                            appInfo
+                        )
+                        .toString()
+
+                } else {
+
+                    packageName
+                }
 
             val intent =
                 Intent(
@@ -164,11 +290,22 @@ class AppAccessibilityService : AccessibilityService() {
                         "PACKAGE_NAME",
                         packageName
                     )
+
+                    putExtra(
+                        "APP_NAME",
+                        appName
+                    )
                 }
 
-            startActivity(intent)
+            startActivity(
+                intent
+            )
 
         } catch (e: Exception) {
+
+            clearLockScreenActive(
+                packageName
+            )
 
             Log.e(
                 "AppLockService",
@@ -185,14 +322,20 @@ class AppAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
 
         try {
+
             unregisterReceiver(
                 screenReceiver
             )
+
         } catch (e: Exception) {
             // Ignore
         }
 
         clearAllSessions()
+
+        activeLockScreenPackage = null
+
+        lastForegroundPackage = null
 
         super.onDestroy()
     }
