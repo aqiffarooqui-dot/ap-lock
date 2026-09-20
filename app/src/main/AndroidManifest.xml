@@ -3,15 +3,23 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- App discovery -->
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- Intruder selfie -->
     <uses-permission
         android:name="android.permission.CAMERA" />
 
+    <!-- Intruder alert vibration -->
+    <uses-permission
+        android:name="android.permission.VIBRATE" />
+
+    <!-- Required for lock-screen overlay behaviour -->
     <uses-permission
         android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- Discover launchable installed apps -->
     <queries>
         <intent>
             <action
@@ -27,9 +35,13 @@
         android:label="Farooqui App Lock"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FarooquiAppLock">
+        android:theme="@style/Theme.FarooquiAppLock"
+        android:enableOnBackInvokedCallback="true">
 
-        <!-- Normal launcher -->
+        <!-- ===================================================== -->
+        <!-- MAIN LAUNCHER -->
+        <!-- ===================================================== -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -44,7 +56,10 @@
 
         </activity>
 
-        <!-- Calculator disguise launcher -->
+        <!-- ===================================================== -->
+        <!-- CALCULATOR DISGUISE -->
+        <!-- ===================================================== -->
+
         <activity-alias
             android:name=".CalculatorAlias"
             android:targetActivity=".MainActivity"
@@ -63,7 +78,10 @@
 
         </activity-alias>
 
-        <!-- App screens -->
+        <!-- ===================================================== -->
+        <!-- APP SCREENS -->
+        <!-- ===================================================== -->
+
         <activity
             android:name=".AppsActivity"
             android:exported="false" />
@@ -88,13 +106,19 @@
             android:name=".WelcomeActivity"
             android:exported="false" />
 
-        <!-- Lock screen -->
+        <!-- ===================================================== -->
+        <!-- APP LOCK SCREEN -->
+        <!-- ===================================================== -->
+
         <activity
             android:name=".LockScreenActivity"
             android:exported="false"
             android:excludeFromRecents="true" />
 
-        <!-- Accessibility -->
+        <!-- ===================================================== -->
+        <!-- ACCESSIBILITY SERVICE -->
+        <!-- ===================================================== -->
+
         <service
             android:name=".AppAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -111,7 +135,10 @@
 
         </service>
 
-        <!-- Notification Privacy -->
+        <!-- ===================================================== -->
+        <!-- NOTIFICATION PRIVACY -->
+        <!-- ===================================================== -->
+
         <service
             android:name=".NotificationPrivacyService"
             android:label="Farooqui App Lock Notification Privacy"
@@ -125,7 +152,10 @@
 
         </service>
 
-        <!-- Uninstall protection -->
+        <!-- ===================================================== -->
+        <!-- UNINSTALL PROTECTION -->
+        <!-- ===================================================== -->
+
         <receiver
             android:name=".MyDeviceAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
