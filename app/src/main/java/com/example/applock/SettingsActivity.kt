@@ -1,5 +1,6 @@
 package com.example.applock
 
+import android.app.TimePickerDialog
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -14,6 +15,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.google.android.material.card.MaterialCardView
+import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -24,8 +26,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var uninstallSwitch: SwitchCompat
     private lateinit var notificationPrivacySwitch: SwitchCompat
 
+    private lateinit var scheduleSwitch: SwitchCompat
+    private lateinit var scheduleTimeView: TextView
+    private lateinit var scheduleStatusView: TextView
+
     private var updatingBehavior = false
     private var updatingNotificationPrivacy = false
+    private var updatingSchedule = false
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponent: ComponentName
@@ -59,6 +66,10 @@ class SettingsActivity : AppCompatActivity() {
 
         if (::notificationPrivacySwitch.isInitialized) {
             updateNotificationPrivacyState()
+        }
+
+        if (::scheduleSwitch.isInitialized) {
+            updateScheduleState()
         }
     }
 
@@ -141,22 +152,16 @@ class SettingsActivity : AppCompatActivity() {
         val behaviorCard =
             createCard()
 
-        val behaviorTitle =
+        behaviorCard.addView(
             createCardTitle(
                 "Unlock behavior"
             )
-
-        behaviorCard.addView(
-            behaviorTitle
         )
 
-        val behaviorDescription =
+        behaviorCard.addView(
             createDescription(
                 "Choose when authentication is required."
             )
-
-        behaviorCard.addView(
-            behaviorDescription
         )
 
         everyTimeSwitch =
@@ -238,6 +243,192 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         // ---------------------------------------------------------
+        // SCHEDULED APP LOCK
+        // ---------------------------------------------------------
+
+        addSectionTitle(
+            root,
+            "SCHEDULED APP LOCK"
+        )
+
+        val scheduleCard =
+            createCard()
+
+        scheduleCard.addView(
+            createCardTitle(
+                "Scheduled protection"
+            )
+        )
+
+        scheduleCard.addView(
+            createDescription(
+                "Automatically enforce your selected app locks during a specific time window."
+            )
+        )
+
+        scheduleSwitch =
+            createSwitchRow(
+                scheduleCard,
+                "Enable scheduled app lock",
+                "Locked apps will require authentication during the schedule."
+            )
+
+        scheduleSwitch.isChecked =
+            ScheduledLockManager.isEnabled(
+                this
+            )
+
+        scheduleSwitch.setOnCheckedChangeListener {
+                _,
+                checked ->
+
+            if (updatingSchedule) {
+                return@setOnCheckedChangeListener
+            }
+
+            ScheduledLockManager.setEnabled(
+                this,
+                checked
+            )
+
+            updateScheduleState()
+
+            AppAccessibilityService.clearAllSessions()
+        }
+
+        val scheduleTimeRow =
+            LinearLayout(this).apply {
+
+                orientation =
+                    LinearLayout.VERTICAL
+
+                setPadding(
+                    dp(6),
+                    dp(12),
+                    dp(6),
+                    dp(12)
+                )
+
+                setOnClickListener {
+                    showStartTimePicker()
+                }
+            }
+
+        val scheduleTimeTitle =
+            TextView(this).apply {
+                text = "Protection window"
+
+                textSize = 15f
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+
+                setTextColor(
+                    Color.parseColor("#111827")
+                )
+            }
+
+        scheduleTimeView =
+            TextView(this).apply {
+
+                text =
+                    ScheduledLockManager.getScheduleText(
+                        this@SettingsActivity
+                    )
+
+                textSize = 14f
+
+                setTextColor(
+                    Color.parseColor("#2563EB")
+                )
+
+                setPadding(
+                    0,
+                    dp(5),
+                    0,
+                    0
+                )
+            }
+
+        scheduleStatusView =
+            TextView(this).apply {
+
+                textSize = 12f
+
+                setTextColor(
+                    Color.parseColor("#6B7280")
+                )
+
+                setPadding(
+                    0,
+                    dp(5),
+                    0,
+                    0
+                )
+            }
+
+        scheduleTimeRow.addView(
+            scheduleTimeTitle
+        )
+
+        scheduleTimeRow.addView(
+            scheduleTimeView
+        )
+
+        scheduleTimeRow.addView(
+            scheduleStatusView
+        )
+
+        scheduleCard.addView(
+            scheduleTimeRow
+        )
+
+        val endTimeRow =
+            LinearLayout(this).apply {
+
+                orientation =
+                    LinearLayout.VERTICAL
+
+                setPadding(
+                    dp(6),
+                    dp(12),
+                    dp(6),
+                    dp(12)
+                )
+
+                setOnClickListener {
+                    showEndTimePicker()
+                }
+            }
+
+        val endTimeTitle =
+            TextView(this).apply {
+
+                text = "Tap to change schedule"
+
+                textSize = 13f
+
+                setTextColor(
+                    Color.parseColor("#6B7280")
+                )
+            }
+
+        endTimeRow.addView(
+            endTimeTitle
+        )
+
+        scheduleCard.addView(
+            endTimeRow
+        )
+
+        root.addView(
+            scheduleCard,
+            cardParams()
+        )
+
+        // ---------------------------------------------------------
         // INTRUDER PROTECTION
         // ---------------------------------------------------------
 
@@ -288,22 +479,16 @@ class SettingsActivity : AppCompatActivity() {
         val notificationCard =
             createCard()
 
-        val notificationTitle =
+        notificationCard.addView(
             createCardTitle(
                 "Notification privacy"
             )
-
-        notificationCard.addView(
-            notificationTitle
         )
 
-        val notificationDescription =
+        notificationCard.addView(
             createDescription(
                 "Hide notifications from locked apps while keeping your other notifications visible."
             )
-
-        notificationCard.addView(
-            notificationDescription
         )
 
         notificationPrivacySwitch =
@@ -331,7 +516,10 @@ class SettingsActivity : AppCompatActivity() {
                 if (!isNotificationAccessGranted()) {
 
                     updatingNotificationPrivacy = true
-                    notificationPrivacySwitch.isChecked = false
+
+                    notificationPrivacySwitch.isChecked =
+                        false
+
                     updatingNotificationPrivacy = false
 
                     SettingsManager.setNotificationPrivacyEnabled(
@@ -348,21 +536,24 @@ class SettingsActivity : AppCompatActivity() {
                         true
                     )
 
-                    NotificationPrivacyService.refreshLockedApps()
+                    NotificationPrivacyService
+                        .refreshLockedApps()
                 }
 
             } else {
 
-                SettingsManager.setNotificationPrivacyEnabled(
-                    this,
-                    false
-                )
+                SettingsManager
+                    .setNotificationPrivacyEnabled(
+                        this,
+                        false
+                    )
 
-                NotificationPrivacyService.refreshLockedApps()
+                NotificationPrivacyService
+                    .refreshLockedApps()
             }
         }
 
-        val accessRow =
+        notificationCard.addView(
             createActionRow(
                 notificationCard,
                 "🔐  Notification Access",
@@ -370,13 +561,6 @@ class SettingsActivity : AppCompatActivity() {
             ) {
                 openNotificationAccessSettings()
             }
-
-        notificationCard.addView(
-            accessRow,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
         )
 
         root.addView(
@@ -412,10 +596,11 @@ class SettingsActivity : AppCompatActivity() {
                 _,
                 checked ->
 
-            SettingsManager.setCalculatorDisguiseEnabled(
-                this,
-                checked
-            )
+            SettingsManager
+                .setCalculatorDisguiseEnabled(
+                    this,
+                    checked
+                )
 
             DisguiseHelper.switchIcon(
                 this,
@@ -464,16 +649,19 @@ class SettingsActivity : AppCompatActivity() {
 
                 val intent =
                     Intent(
-                        DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN
+                        DevicePolicyManager
+                            .ACTION_ADD_DEVICE_ADMIN
                     ).apply {
 
                         putExtra(
-                            DevicePolicyManager.EXTRA_DEVICE_ADMIN,
+                            DevicePolicyManager
+                                .EXTRA_DEVICE_ADMIN,
                             adminComponent
                         )
 
                         putExtra(
-                            DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                            DevicePolicyManager
+                                .EXTRA_ADD_EXPLANATION,
                             "Enable uninstall protection for Farooqui App Lock."
                         )
                     }
@@ -483,14 +671,16 @@ class SettingsActivity : AppCompatActivity() {
             } else {
 
                 if (
-                    devicePolicyManager.isAdminActive(
-                        adminComponent
-                    )
+                    devicePolicyManager
+                        .isAdminActive(
+                            adminComponent
+                        )
                 ) {
 
-                    devicePolicyManager.removeActiveAdmin(
-                        adminComponent
-                    )
+                    devicePolicyManager
+                        .removeActiveAdmin(
+                            adminComponent
+                        )
                 }
             }
         }
@@ -586,13 +776,140 @@ class SettingsActivity : AppCompatActivity() {
         scrollView.addView(root)
 
         setContentView(scrollView)
+
+        updateScheduleState()
     }
 
     // -------------------------------------------------------------
-    // NOTIFICATION PRIVACY HELPERS
+    // SCHEDULED APP LOCK
     // -------------------------------------------------------------
 
-    private fun isNotificationAccessGranted(): Boolean {
+    private fun updateScheduleState() {
+
+        if (!::scheduleSwitch.isInitialized) {
+            return
+        }
+
+        val enabled =
+            ScheduledLockManager.isEnabled(
+                this
+            )
+
+        val schedule =
+            ScheduledLockManager.getScheduleText(
+                this
+            )
+
+        scheduleTimeView.text =
+            schedule
+
+        scheduleStatusView.text =
+            if (!enabled) {
+                "Scheduled protection is turned off."
+            } else if (
+                ScheduledLockManager.isInsideSchedule(
+                    this
+                )
+            ) {
+                "● Protection is active now."
+            } else {
+                "○ Protection is currently outside the schedule."
+            }
+
+        updatingSchedule = true
+
+        scheduleSwitch.isChecked =
+            enabled
+
+        updatingSchedule = false
+    }
+
+    private fun showStartTimePicker() {
+
+        val dialog =
+            TimePickerDialog(
+                this,
+                { _, hour, minute ->
+
+                    ScheduledLockManager.setSchedule(
+                        this,
+                        hour,
+                        minute,
+                        ScheduledLockManager.getEndHour(
+                            this
+                        ),
+                        ScheduledLockManager.getEndMinute(
+                            this
+                        )
+                    )
+
+                    AppAccessibilityService
+                        .clearAllSessions()
+
+                    updateScheduleState()
+                },
+                ScheduledLockManager.getStartHour(
+                    this
+                ),
+                ScheduledLockManager.getStartMinute(
+                    this
+                ),
+                false
+            )
+
+        dialog.setTitle(
+            "Schedule start time"
+        )
+
+        dialog.show()
+    }
+
+    private fun showEndTimePicker() {
+
+        val dialog =
+            TimePickerDialog(
+                this,
+                { _, hour, minute ->
+
+                    ScheduledLockManager.setSchedule(
+                        this,
+                        ScheduledLockManager.getStartHour(
+                            this
+                        ),
+                        ScheduledLockManager.getStartMinute(
+                            this
+                        ),
+                        hour,
+                        minute
+                    )
+
+                    AppAccessibilityService
+                        .clearAllSessions()
+
+                    updateScheduleState()
+                },
+                ScheduledLockManager.getEndHour(
+                    this
+                ),
+                ScheduledLockManager.getEndMinute(
+                    this
+                ),
+                false
+            )
+
+        dialog.setTitle(
+            "Schedule end time"
+        )
+
+        dialog.show()
+    }
+
+    // -------------------------------------------------------------
+    // NOTIFICATION PRIVACY
+    // -------------------------------------------------------------
+
+    private fun isNotificationAccessGranted():
+            Boolean {
 
         val enabledPackages =
             Settings.Secure.getString(
@@ -628,9 +945,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateNotificationPrivacyState() {
 
         val enabled =
-            SettingsManager.isNotificationPrivacyEnabled(
-                this
-            )
+            SettingsManager
+                .isNotificationPrivacyEnabled(
+                    this
+                )
 
         val accessGranted =
             isNotificationAccessGranted()
@@ -642,12 +960,16 @@ class SettingsActivity : AppCompatActivity() {
 
         updatingNotificationPrivacy = false
 
-        if (enabled && !accessGranted) {
+        if (
+            enabled &&
+            !accessGranted
+        ) {
 
-            SettingsManager.setNotificationPrivacyEnabled(
-                this,
-                false
-            )
+            SettingsManager
+                .setNotificationPrivacyEnabled(
+                    this,
+                    false
+                )
         }
     }
 
@@ -655,7 +977,8 @@ class SettingsActivity : AppCompatActivity() {
     // UI HELPERS
     // -------------------------------------------------------------
 
-    private fun createCard(): MaterialCardView {
+    private fun createCard():
+            MaterialCardView {
 
         return MaterialCardView(this).apply {
 
@@ -668,7 +991,9 @@ class SettingsActivity : AppCompatActivity() {
                 dp(1)
 
             strokeColor =
-                Color.parseColor("#E5E7EB")
+                Color.parseColor(
+                    "#E5E7EB"
+                )
 
             setCardBackgroundColor(
                 Color.WHITE
@@ -699,7 +1024,9 @@ class SettingsActivity : AppCompatActivity() {
             )
 
             setTextColor(
-                Color.parseColor("#111827")
+                Color.parseColor(
+                    "#111827"
+                )
             )
 
             setPadding(
@@ -722,7 +1049,9 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 13f
 
             setTextColor(
-                Color.parseColor("#6B7280")
+                Color.parseColor(
+                    "#6B7280"
+                )
             )
 
             setPadding(
@@ -766,7 +1095,8 @@ class SettingsActivity : AppCompatActivity() {
                 layoutParams =
                     LinearLayout.LayoutParams(
                         0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams
+                            .WRAP_CONTENT,
                         1f
                     )
             }
@@ -779,7 +1109,9 @@ class SettingsActivity : AppCompatActivity() {
                 textSize = 15f
 
                 setTextColor(
-                    Color.parseColor("#111827")
+                    Color.parseColor(
+                        "#111827"
+                    )
                 )
             }
 
@@ -791,7 +1123,9 @@ class SettingsActivity : AppCompatActivity() {
                 textSize = 12f
 
                 setTextColor(
-                    Color.parseColor("#6B7280")
+                    Color.parseColor(
+                        "#6B7280"
+                    )
                 )
 
                 setPadding(
@@ -811,9 +1145,7 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         val switch =
-            SwitchCompat(this).apply {
-                isClickable = true
-            }
+            SwitchCompat(this)
 
         container.addView(
             textContainer
@@ -861,7 +1193,9 @@ class SettingsActivity : AppCompatActivity() {
             }
 
             val titleView =
-                TextView(this@SettingsActivity).apply {
+                TextView(
+                    this@SettingsActivity
+                ).apply {
 
                     text = title
 
@@ -873,19 +1207,25 @@ class SettingsActivity : AppCompatActivity() {
                     )
 
                     setTextColor(
-                        Color.parseColor("#111827")
+                        Color.parseColor(
+                            "#111827"
+                        )
                     )
                 }
 
             val descriptionView =
-                TextView(this@SettingsActivity).apply {
+                TextView(
+                    this@SettingsActivity
+                ).apply {
 
                     text = description
 
                     textSize = 12f
 
                     setTextColor(
-                        Color.parseColor("#6B7280")
+                        Color.parseColor(
+                            "#6B7280"
+                        )
                     )
 
                     setPadding(
@@ -909,69 +1249,13 @@ class SettingsActivity : AppCompatActivity() {
         action: () -> Unit
     ) {
 
-        val row =
-            LinearLayout(this).apply {
-
-                orientation =
-                    LinearLayout.VERTICAL
-
-                setPadding(
-                    dp(6),
-                    dp(14),
-                    dp(6),
-                    dp(14)
-                )
-
-                isClickable = true
-                isFocusable = true
-
-                setOnClickListener {
-                    action()
-                }
-            }
-
-        val titleView =
-            TextView(this).apply {
-
-                text = title
-
-                textSize = 15f
-
-                setTypeface(
-                    null,
-                    android.graphics.Typeface.BOLD
-                )
-
-                setTextColor(
-                    Color.parseColor("#111827")
-                )
-            }
-
-        val descriptionView =
-            TextView(this).apply {
-
-                text = description
-
-                textSize = 12f
-
-                setTextColor(
-                    Color.parseColor("#6B7280")
-                )
-
-                setPadding(
-                    0,
-                    dp(4),
-                    0,
-                    0
-                )
-            }
-
-        row.addView(titleView)
-
-        row.addView(descriptionView)
-
         parent.addView(
-            row,
+            createActionRow(
+                parent,
+                title,
+                description,
+                action
+            ),
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -997,7 +1281,9 @@ class SettingsActivity : AppCompatActivity() {
                 )
 
                 setTextColor(
-                    Color.parseColor("#6B7280")
+                    Color.parseColor(
+                        "#6B7280"
+                    )
                 )
 
                 setPadding(
@@ -1030,7 +1316,7 @@ class SettingsActivity : AppCompatActivity() {
 
         return (
             value *
-                resources.displayMetrics.density
+                    resources.displayMetrics.density
             ).toInt()
     }
 }
