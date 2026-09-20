@@ -2,14 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <queries>
+
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+
     </queries>
 
     <application
@@ -25,8 +29,11 @@
             android:exported="true">
 
             <intent-filter>
+
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
+
             </intent-filter>
 
         </activity>
@@ -53,7 +60,10 @@
             android:exported="true">
 
             <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
+
+                <action
+                    android:name="android.accessibilityservice.AccessibilityService" />
+
             </intent-filter>
 
             <meta-data
@@ -72,7 +82,10 @@
                 android:resource="@xml/device_admin" />
 
             <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+
+                <action
+                    android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+
             </intent-filter>
 
         </receiver>
