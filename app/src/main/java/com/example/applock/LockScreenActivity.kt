@@ -4,10 +4,12 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -22,34 +24,41 @@ class LockScreenActivity : AppCompatActivity() {
 
     private var targetAppName: String = "App"
 
-    private lateinit var containerLayout:
-        LinearLayout
+    private lateinit var containerLayout: LinearLayout
 
     private lateinit var intruderCaptureHelper:
         IntruderCaptureHelper
 
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-        super.onCreate(
-            savedInstanceState
+        // Prevent screenshots/screen recording of the lock screen.
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SECURE
         )
 
         targetPackageName =
-            intent.getStringExtra(
-                "PACKAGE_NAME"
-            )
+            intent.getStringExtra("PACKAGE_NAME")
 
         targetAppName =
-            intent.getStringExtra(
-                "APP_NAME"
-            ) ?: "App"
+            intent.getStringExtra("APP_NAME")
+                ?: "App"
 
         intruderCaptureHelper =
-            IntruderCaptureHelper(
-                this
-            )
+            IntruderCaptureHelper(this)
+
+        buildLockScreen()
+
+        setupBackHandling()
+
+        showBiometricPrompt()
+    }
+
+    // =====================================================
+    // LOCK SCREEN UI
+    // =====================================================
+
+    private fun buildLockScreen() {
 
         containerLayout =
             LinearLayout(this).apply {
@@ -57,37 +66,48 @@ class LockScreenActivity : AppCompatActivity() {
                 orientation =
                     LinearLayout.VERTICAL
 
-                setBackgroundColor(
-                    Color.parseColor(
-                        "#1C1C1E"
-                    )
-                )
-
                 gravity =
                     Gravity.CENTER
 
+                setBackgroundColor(
+                    Color.parseColor("#111318")
+                )
+
                 setPadding(
-                    48,
-                    48,
-                    48,
-                    48
+                    dp(32),
+                    dp(48),
+                    dp(32),
+                    dp(48)
                 )
             }
 
-        setContentView(
-            containerLayout
-        )
+        setContentView(containerLayout)
 
         showBiometricPrompt()
     }
 
-    // -----------------------------------------------------
-    // LOCK SCREEN UI
-    // -----------------------------------------------------
-
     private fun showBiometricPrompt() {
 
         containerLayout.removeAllViews()
+
+        val shield =
+            TextView(this).apply {
+
+                text = "🛡️"
+
+                textSize = 52f
+
+                gravity = Gravity.CENTER
+
+                setPadding(
+                    0,
+                    0,
+                    0,
+                    dp(20)
+                )
+            }
+
+        containerLayout.addView(shield)
 
         val title =
             TextView(this).apply {
@@ -95,62 +115,50 @@ class LockScreenActivity : AppCompatActivity() {
                 text =
                     "$targetAppName is locked"
 
-                textSize =
-                    24f
+                textSize = 25f
 
-                setTextColor(
-                    Color.WHITE
-                )
+                setTextColor(Color.WHITE)
 
                 setTypeface(
                     null,
                     android.graphics.Typeface.BOLD
                 )
 
-                gravity =
-                    Gravity.CENTER
+                gravity = Gravity.CENTER
 
                 setPadding(
                     0,
                     0,
                     0,
-                    16
+                    dp(12)
                 )
             }
 
-        containerLayout.addView(
-            title
-        )
+        containerLayout.addView(title)
 
         val subtitle =
             TextView(this).apply {
 
                 text =
-                    "Use your phone's biometric or screen-lock credential"
+                    "Authenticate to continue"
 
-                textSize =
-                    14f
+                textSize = 15f
 
                 setTextColor(
-                    Color.parseColor(
-                        "#8E8E93"
-                    )
+                    Color.parseColor("#A1A5AE")
                 )
 
-                gravity =
-                    Gravity.CENTER
+                gravity = Gravity.CENTER
 
                 setPadding(
                     0,
                     0,
                     0,
-                    32
+                    dp(28)
                 )
             }
 
-        containerLayout.addView(
-            subtitle
-        )
+        containerLayout.addView(subtitle)
 
         val btnRetry =
             Button(this).apply {
@@ -158,58 +166,55 @@ class LockScreenActivity : AppCompatActivity() {
                 text =
                     "Unlock $targetAppName"
 
-                setBackgroundColor(
-                    Color.parseColor(
-                        "#007AFF"
-                    )
-                )
+                setTextColor(Color.WHITE)
 
-                setTextColor(
-                    Color.WHITE
+                setBackgroundColor(
+                    Color.parseColor("#2563EB")
                 )
 
                 setOnClickListener {
-
                     triggerBiometric()
                 }
             }
 
         containerLayout.addView(
-            btnRetry
+            btnRetry,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(52)
+            )
         )
+    }
 
+    // =====================================================
+    // BIOMETRIC
+    // =====================================================
+
+    private fun showBiometricPromptAgain() {
         triggerBiometric()
     }
 
-    // -----------------------------------------------------
-    // BIOMETRIC
-    // -----------------------------------------------------
-
     private fun triggerBiometric() {
 
+        if (isUnlocked) {
+            return
+        }
+
         val biometricManager =
-            BiometricManager.from(
-                this
-            )
+            BiometricManager.from(this)
 
         val authenticators =
-            BiometricManager
-                .Authenticators
-                .BIOMETRIC_STRONG or
-                    BiometricManager
-                        .Authenticators
-                        .DEVICE_CREDENTIAL
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
         val canAuthenticate =
-            biometricManager
-                .canAuthenticate(
-                    authenticators
-                )
+            biometricManager.canAuthenticate(
+                authenticators
+            )
 
         if (
             canAuthenticate !=
-            BiometricManager
-                .BIOMETRIC_SUCCESS
+            BiometricManager.BIOMETRIC_SUCCESS
         ) {
 
             Toast.makeText(
@@ -222,63 +227,91 @@ class LockScreenActivity : AppCompatActivity() {
         }
 
         val executor: Executor =
-            ContextCompat
-                .getMainExecutor(
-                    this
-                )
+            ContextCompat.getMainExecutor(this)
 
         val biometricPrompt =
             BiometricPrompt(
                 this,
                 executor,
                 object :
-                    BiometricPrompt
-                        .AuthenticationCallback() {
+                    BiometricPrompt.AuthenticationCallback() {
 
-                    override fun
-                        onAuthenticationError(
-                        errorCode: Int,
-                        errString: CharSequence
-                    ) {
-
-                        super
-                            .onAuthenticationError(
-                                errorCode,
-                                errString
-                            )
-
-                        if (!isUnlocked) {
-
-                            captureIntruderPhoto()
-
-                            Toast.makeText(
-                                this@LockScreenActivity,
-                                "Authentication cancelled",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-
-                    override fun
-                        onAuthenticationSucceeded(
+                    override fun onAuthenticationSucceeded(
                         result:
-                        BiometricPrompt
-                            .AuthenticationResult
+                        BiometricPrompt.AuthenticationResult
                     ) {
 
-                        super
-                            .onAuthenticationSucceeded(
-                                result
-                            )
+                        super.onAuthenticationSucceeded(
+                            result
+                        )
 
                         unlockSuccess()
                     }
 
-                    override fun
-                        onAuthenticationFailed() {
+                    override fun onAuthenticationError(
+                        errorCode: Int,
+                        errString: CharSequence
+                    ) {
 
-                        super
-                            .onAuthenticationFailed()
+                        super.onAuthenticationError(
+                            errorCode,
+                            errString
+                        )
+
+                        /*
+                         * IMPORTANT:
+                         *
+                         * Cancellation is NOT an intrusion.
+                         *
+                         * We only capture an intruder selfie
+                         * from onAuthenticationFailed(), which
+                         * represents an actual failed biometric
+                         * authentication attempt.
+                         */
+
+                        if (!isUnlocked) {
+
+                            when (errorCode) {
+
+                                BiometricPrompt
+                                    .ERROR_USER_CANCELED,
+
+                                BiometricPrompt
+                                    .ERROR_CANCELED,
+
+                                BiometricPrompt
+                                    .ERROR_NEGATIVE_BUTTON -> {
+
+                                    Toast.makeText(
+                                        this@LockScreenActivity,
+                                        "Authentication cancelled",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                else -> {
+
+                                    Toast.makeText(
+                                        this@LockScreenActivity,
+                                        errString,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onAuthenticationFailed() {
+
+                        super.onAuthenticationFailed()
+
+                        /*
+                         * This callback is reached when biometric
+                         * verification actually fails.
+                         *
+                         * This is where the optional intruder
+                         * selfie is captured.
+                         */
 
                         captureIntruderPhoto()
 
@@ -292,8 +325,7 @@ class LockScreenActivity : AppCompatActivity() {
             )
 
         val promptInfo =
-            BiometricPrompt.PromptInfo
-                .Builder()
+            BiometricPrompt.PromptInfo.Builder()
                 .setTitle(
                     "$targetAppName is locked"
                 )
@@ -310,19 +342,17 @@ class LockScreenActivity : AppCompatActivity() {
         )
     }
 
-    // -----------------------------------------------------
+    // =====================================================
     // INTRUDER SELFIE
-    // -----------------------------------------------------
+    // =====================================================
 
     private fun captureIntruderPhoto() {
 
         if (
-            !SettingsManager
-                .isIntruderSelfieEnabled(
-                    this
-                )
+            !SettingsManager.isIntruderSelfieEnabled(
+                this
+            )
         ) {
-
             return
         }
 
@@ -331,18 +361,24 @@ class LockScreenActivity : AppCompatActivity() {
             intruderCaptureHelper
                 .captureIntruderPhoto()
 
-        } catch (e: Exception) {
+        } catch (_: Exception) {
 
-            // Selfie failure should never
-            // block the normal App Lock flow.
+            /*
+             * Intruder capture must never prevent
+             * the normal App Lock flow.
+             */
         }
     }
 
-    // -----------------------------------------------------
+    // =====================================================
     // UNLOCK SUCCESS
-    // -----------------------------------------------------
+    // =====================================================
 
     private fun unlockSuccess() {
+
+        if (isUnlocked) {
+            return
+        }
 
         isUnlocked = true
 
@@ -352,15 +388,12 @@ class LockScreenActivity : AppCompatActivity() {
         if (packageName != null) {
 
             /*
-             * Successful authentication ke baad
-             * current app ko temporarily unlocked mark karo.
-             *
              * Mode 0:
-             * App foreground se bahar jaate hi
-             * session clear hoga.
+             * Session is cleared when the protected app
+             * leaves the foreground.
              *
              * Mode 1:
-             * Phone lock hone tak session rahega.
+             * Session remains unlocked until screen-off.
              */
 
             AppAccessibilityService
@@ -383,9 +416,9 @@ class LockScreenActivity : AppCompatActivity() {
         launchTargetApp()
     }
 
-    // -----------------------------------------------------
-    // LAUNCH TARGET APP
-    // -----------------------------------------------------
+    // =====================================================
+    // TARGET APP
+    // =====================================================
 
     private fun launchTargetApp() {
 
@@ -416,9 +449,17 @@ class LockScreenActivity : AppCompatActivity() {
                 startActivity(
                     launchIntent
                 )
+
+            } else {
+
+                Toast.makeText(
+                    this,
+                    "Unable to open $targetAppName",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
 
-        } catch (e: Exception) {
+        } catch (_: Exception) {
 
             Toast.makeText(
                 this,
@@ -430,16 +471,43 @@ class LockScreenActivity : AppCompatActivity() {
         finish()
     }
 
-    // -----------------------------------------------------
-    // GO HOME
-    // -----------------------------------------------------
+    // =====================================================
+    // BACK HANDLING
+    // =====================================================
+
+    private fun setupBackHandling() {
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+
+                override fun handleOnBackPressed() {
+
+                    if (!isUnlocked) {
+
+                        AppAccessibilityService
+                            .clearLockScreenActive(
+                                targetPackageName
+                            )
+
+                        goToHome()
+
+                    } else {
+
+                        isEnabled = false
+
+                        onBackPressedDispatcher
+                            .onBackPressed()
+                    }
+                }
+            }
+        )
+    }
 
     private fun goToHome() {
 
         val homeIntent =
-            Intent(
-                Intent.ACTION_MAIN
-            ).apply {
+            Intent(Intent.ACTION_MAIN).apply {
 
                 addCategory(
                     Intent.CATEGORY_HOME
@@ -449,18 +517,16 @@ class LockScreenActivity : AppCompatActivity() {
                     Intent.FLAG_ACTIVITY_NEW_TASK
             }
 
-        startActivity(
-            homeIntent
-        )
+        startActivity(homeIntent)
 
         finish()
     }
 
-    // -----------------------------------------------------
-    // BACK BUTTON
-    // -----------------------------------------------------
+    // =====================================================
+    // DESTROY
+    // =====================================================
 
-    override fun onBackPressed() {
+    override fun onDestroy() {
 
         if (!isUnlocked) {
 
@@ -468,26 +534,20 @@ class LockScreenActivity : AppCompatActivity() {
                 .clearLockScreenActive(
                     targetPackageName
                 )
-
-            goToHome()
-
-        } else {
-
-            super.onBackPressed()
         }
-    }
-
-    // -----------------------------------------------------
-    // DESTROY
-    // -----------------------------------------------------
-
-    override fun onDestroy() {
-
-        AppAccessibilityService
-            .clearLockScreenActive(
-                targetPackageName
-            )
 
         super.onDestroy()
+    }
+
+    // =====================================================
+    // HELPERS
+    // =====================================================
+
+    private fun dp(value: Int): Int {
+
+        return (
+            value *
+                resources.displayMetrics.density
+        ).toInt()
     }
 }
