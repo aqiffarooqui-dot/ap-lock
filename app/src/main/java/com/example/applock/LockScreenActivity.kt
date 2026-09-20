@@ -37,6 +37,7 @@ class LockScreenActivity : AppCompatActivity() {
         }
 
         setContentView(containerLayout)
+
         showBiometricPrompt()
     }
 
@@ -51,6 +52,7 @@ class LockScreenActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 16)
         }
+
         containerLayout.addView(title)
 
         val subtitle = TextView(this).apply {
@@ -60,131 +62,218 @@ class LockScreenActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 32)
         }
+
         containerLayout.addView(subtitle)
 
         val btnRetry = Button(this).apply {
             text = "Tap to Unlock"
             setBackgroundColor(Color.parseColor("#007AFF"))
             setTextColor(Color.WHITE)
-            setOnClickListener { triggerBiometric() }
+
+            setOnClickListener {
+                triggerBiometric()
+            }
         }
+
         containerLayout.addView(btnRetry)
 
         triggerBiometric()
     }
 
     private fun triggerBiometric() {
-        val executor: Executor = ContextCompat.getMainExecutor(this)
-        
-        val biometricPrompt = BiometricPrompt(this, executor,
+
+        val executor: Executor =
+            ContextCompat.getMainExecutor(this)
+
+        val biometricPrompt = BiometricPrompt(
+            this,
+            executor,
             object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
+
+                override fun onAuthenticationError(
+                    errorCode: Int,
+                    errString: CharSequence
+                ) {
+                    super.onAuthenticationError(
+                        errorCode,
+                        errString
+                    )
+
                     if (!isUnlocked) {
                         failedAttempts++
                         handleFailureAndIntruder()
                     }
                 }
 
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                override fun onAuthenticationSucceeded(
+                    result: BiometricPrompt.AuthenticationResult
+                ) {
                     super.onAuthenticationSucceeded(result)
+
                     unlockSuccess()
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
+
                     failedAttempts++
-                    Toast.makeText(applicationContext, "Verification Failed ($failedAttempts/3)", Toast.LENGTH_SHORT).show()
+
+                    Toast.makeText(
+                        applicationContext,
+                        "Verification Failed ($failedAttempts/3)",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
                     handleFailureAndIntruder()
                 }
-            })
+            }
+        )
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Farooqui App Lock")
-            .setSubtitle("Use your configured Biometric")
-            .setNegativeButtonText("Use PIN Fallback")
-            .build()
+        val promptInfo =
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Farooqui App Lock")
+                .setSubtitle("Use your configured Biometric")
+                .setNegativeButtonText("Use PIN Fallback")
+                .build()
 
         biometricPrompt.authenticate(promptInfo)
     }
 
     private fun handleFailureAndIntruder() {
-        // Agar biometric fail ho ya error aaye, toh intruder capture trigger karo
-        intruderHelper.captureIntruderPhoto()
+
+        try {
+            intruderHelper.captureIntruderPhoto()
+        } catch (e: Exception) {
+            // Camera failure should not crash the lock screen
+        }
+
         checkFallbackTrigger()
     }
 
     private fun checkFallbackTrigger() {
-        // Agar 3 baar fail ho jaye ya user negative button dabaye, toh PIN window dikhao
+
         if (failedAttempts >= 3) {
             showPinFallbackScreen()
         }
     }
 
     private fun showPinFallbackScreen() {
+
         containerLayout.removeAllViews()
 
         val title = TextView(this).apply {
             text = "Enter PIN Fallback"
             textSize = 22f
             setTextColor(Color.WHITE)
-            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTypeface(
+                null,
+                android.graphics.Typeface.BOLD
+            )
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 24)
         }
+
         containerLayout.addView(title)
 
         val pinInput = EditText(this).apply {
-            hint = "Enter 4-digit PIN (default: 1234)"
-            setHintTextColor(Color.parseColor("#8E8E93"))
+            hint = "Enter 4-digit PIN"
+            setHintTextColor(
+                Color.parseColor("#8E8E93")
+            )
             setTextColor(Color.WHITE)
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+
+            inputType =
+                android.text.InputType.TYPE_CLASS_NUMBER or
+                        android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#2C2C2E"))
+
+            setBackgroundColor(
+                Color.parseColor("#2C2C2E")
+            )
+
             setPadding(32, 32, 32, 32)
         }
+
         containerLayout.addView(pinInput)
 
         val btnSubmit = Button(this).apply {
+
             text = "Unlock"
-            setBackgroundColor(Color.parseColor("#34C759"))
+
+            setBackgroundColor(
+                Color.parseColor("#34C759")
+            )
+
             setTextColor(Color.WHITE)
+
             setOnClickListener {
+
                 if (pinInput.text.toString() == "1234") {
+
                     unlockSuccess()
+
                 } else {
+
                     failedAttempts++
-                    // Galat PIN dalne par bhi intruder selfie capture ho jayegi
-                    intruderHelper.captureIntruderPhoto()
-                    Toast.makeText(context, "Incorrect PIN!", Toast.LENGTH_SHORT).show()
+
+                    try {
+                        intruderHelper.captureIntruderPhoto()
+                    } catch (e: Exception) {
+                        // Ignore camera errors
+                    }
+
+                    Toast.makeText(
+                        context,
+                        "Incorrect PIN!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
+
             setPadding(0, 24, 0, 24)
         }
+
         containerLayout.addView(btnSubmit)
     }
 
     private fun unlockSuccess() {
+
         isUnlocked = true
-        AppAccessibilityService.isCurrentlyLocked = false
-        targetPackageName?.let { pkg ->
-            AppAccessibilityService.setSessionUnlocked(pkg)
+
+        targetPackageName?.let { packageName ->
+            AppAccessibilityService.setSessionUnlocked(
+                packageName
+            )
         }
-        Toast.makeText(applicationContext, "Unlocked Successfully", Toast.LENGTH_SHORT).show()
+
+        Toast.makeText(
+            applicationContext,
+            "Unlocked Successfully",
+            Toast.LENGTH_SHORT
+        ).show()
+
         finish()
     }
 
     private fun goToHome() {
-        AppAccessibilityService.isCurrentlyLocked = false
-        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+
+        val homeIntent =
+            Intent(Intent.ACTION_MAIN).apply {
+
+                addCategory(Intent.CATEGORY_HOME)
+
+                flags =
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
         startActivity(homeIntent)
+
         finish()
     }
 
     override fun onBackPressed() {
+
         if (!isUnlocked) {
             goToHome()
         } else {
