@@ -17,266 +17,605 @@ import androidx.appcompat.widget.SwitchCompat
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var componentName: ComponentName
-    private lateinit var devicePolicyManager: DevicePolicyManager
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    private lateinit var devicePolicyManager:
+        DevicePolicyManager
 
-        devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        componentName = ComponentName(this, MyDeviceAdminReceiver::class.java)
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
 
-        val scrollView = ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#F2F2F7")) // iOS Background color
-        }
-
-        val mainLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(32, 48, 32, 48)
-        }
-
-        // Title
-        val titleView = TextView(this).apply {
-            text = "Settings"
-            textSize = 28f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(Color.parseColor("#000000"))
-            setPadding(0, 0, 0, 32)
-        }
-        mainLayout.addView(titleView)
-
-        // --- Security Section Group ---
-        val securitySectionTitle = TextView(this).apply {
-            text = "SECURITY & AUTHENTICATION"
-            textSize = 13f
-            setTextColor(Color.parseColor("#6D6D72"))
-            setPadding(16, 0, 16, 8)
-        }
-        mainLayout.addView(securitySectionTitle)
-
-        val securityCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.settings_card_bg)
-            setPadding(24, 16, 24, 16)
-        }
-
-        // Option 1: Biometric Mode Preference
-        val optBiometric = createSettingRow("Biometric Lock (Face/Fingerprint)", true) { isChecked ->
-            val mode = if (isChecked) 0 else 1
-            SettingsManager.setBiometricMode(this, mode)
-        }
-        securityCard.addView(optBiometric)
-        securityCard.addView(createDivider())
-
-        // Option 2: Intruder Selfie Toggle
-        val optIntruder = createSettingRow("Intruder Selfie (Capture on Fail)", true) { isChecked ->
-            // Intruder selfie preference active/inactive logic
-        }
-        securityCard.addView(optIntruder)
-
-        mainLayout.addView(securityCard)
-
-        // --- Privacy & Stealth Section Group ---
-        val privacySectionTitle = TextView(this).apply {
-            text = "PRIVACY & PROTECTION"
-            textSize = 13f
-            setTextColor(Color.parseColor("#6D6D72"))
-            setPadding(16, 32, 16, 8)
-        }
-        mainLayout.addView(privacySectionTitle)
-
-        val privacyCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.settings_card_bg)
-            setPadding(24, 16, 24, 16)
-        }
-
-        // --- UNLOCK BEHAVIOR SECTION ---
-val unlockBehaviorTitle = TextView(this).apply {
-    text = "UNLOCK BEHAVIOR"
-    textSize = 13f
-    setTextColor(Color.parseColor("#6D6D72"))
-    setPadding(16, 32, 16, 8)
-}
-
-mainLayout.addView(
-    unlockBehaviorTitle
-)
-
-val unlockBehaviorCard =
-    LinearLayout(this).apply {
-
-        orientation =
-            LinearLayout.VERTICAL
-
-        setBackgroundResource(
-            R.drawable.settings_card_bg
+        super.onCreate(
+            savedInstanceState
         )
 
-        setPadding(
-            24,
-            16,
-            24,
-            16
-        )
-    }
+        devicePolicyManager =
+            getSystemService(
+                Context.DEVICE_POLICY_SERVICE
+            ) as DevicePolicyManager
 
-val currentBehavior =
-    SettingsManager.getUnlockBehavior(
-        this
-    )
-
-val everyTimeRow =
-    createSettingRow(
-        "Ask biometric every time",
-        currentBehavior == 0
-    ) { checked ->
-
-        if (checked) {
-
-            SettingsManager.setUnlockBehavior(
+        componentName =
+            ComponentName(
                 this,
-                0
+                MyDeviceAdminReceiver::class.java
             )
-        }
-    }
 
-unlockBehaviorCard.addView(
-    everyTimeRow
-)
+        val scrollView =
+            ScrollView(this).apply {
 
-unlockBehaviorCard.addView(
-    createDivider()
-)
-
-val untilPhoneLockedRow =
-    createSettingRow(
-        "Stay unlocked until phone is locked",
-        currentBehavior == 1
-    ) { checked ->
-
-        if (checked) {
-
-            SettingsManager.setUnlockBehavior(
-                this,
-                1
-            )
-        }
-    }
-
-unlockBehaviorCard.addView(
-    untilPhoneLockedRow
-)
-
-mainLayout.addView(
-    unlockBehaviorCard
-)
-
-        // Option 3: Disguise as Calculator Mode
-        val optStealth = createSettingRow("Disguise Icon as Calculator", false) { isChecked ->
-            if (isChecked) {
-                DisguiseHelper.switchIcon(this, "calculator")
-            } else {
-                DisguiseHelper.switchIcon(this, "normal")
+                setBackgroundColor(
+                    Color.parseColor(
+                        "#F2F2F7"
+                    )
+                )
             }
-        }
-        privacyCard.addView(optStealth)
-        privacyCard.addView(createDivider())
 
-        // Option 4: Uninstall Protection (Device Administrator)
-        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
-        val optUninstall = createSettingRow("Uninstall Protection", isAdminActive) { isChecked ->
-            if (isChecked) {
-                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-                    putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable Uninstall Protection to prevent unauthorized uninstallation of Farooqui App Lock.")
+        val mainLayout =
+            LinearLayout(this).apply {
+
+                orientation =
+                    LinearLayout.VERTICAL
+
+                setPadding(
+                    32,
+                    48,
+                    32,
+                    48
+                )
+            }
+
+        // -------------------------------------------------
+        // TITLE
+        // -------------------------------------------------
+
+        val titleView =
+            TextView(this).apply {
+
+                text = "Settings"
+
+                textSize = 28f
+
+                setTypeface(
+                    null,
+                    android.graphics.Typeface.BOLD
+                )
+
+                setTextColor(
+                    Color.parseColor(
+                        "#000000"
+                    )
+                )
+
+                setPadding(
+                    0,
+                    0,
+                    0,
+                    32
+                )
+            }
+
+        mainLayout.addView(
+            titleView
+        )
+
+        // -------------------------------------------------
+        // SECURITY & AUTHENTICATION
+        // -------------------------------------------------
+
+        val securitySectionTitle =
+            createSectionTitle(
+                "SECURITY & AUTHENTICATION"
+            )
+
+        mainLayout.addView(
+            securitySectionTitle
+        )
+
+        val securityCard =
+            createCard()
+
+        val phoneAuthInfo =
+            TextView(this).apply {
+
+                text =
+                    "App Lock uses your phone's biometric or screen-lock credential. No separate App Lock PIN is required."
+
+                textSize = 15f
+
+                setTextColor(
+                    Color.parseColor(
+                        "#3A3A3C"
+                    )
+                )
+
+                setPadding(
+                    0,
+                    16,
+                    0,
+                    16
+                )
+            }
+
+        securityCard.addView(
+            phoneAuthInfo
+        )
+
+        mainLayout.addView(
+            securityCard
+        )
+
+        // -------------------------------------------------
+        // PRIVACY & PROTECTION
+        // -------------------------------------------------
+
+        val privacySectionTitle =
+            createSectionTitle(
+                "PRIVACY & PROTECTION"
+            )
+
+        mainLayout.addView(
+            privacySectionTitle
+        )
+
+        val privacyCard =
+            createCard()
+
+        // -------------------------------------------------
+        // INTRUDER SELFIE
+        // -------------------------------------------------
+
+        val intruderSelfieRow =
+            createSettingRow(
+                "Intruder Selfie (Capture on Fail)",
+                SettingsManager
+                    .isIntruderSelfieEnabled(
+                        this
+                    )
+            ) { isChecked ->
+
+                SettingsManager
+                    .setIntruderSelfieEnabled(
+                        this,
+                        isChecked
+                    )
+            }
+
+        privacyCard.addView(
+            intruderSelfieRow
+        )
+
+        privacyCard.addView(
+            createDivider()
+        )
+
+        // -------------------------------------------------
+        // DISGUISE ICON
+        // -------------------------------------------------
+
+        val stealthRow =
+            createSettingRow(
+                "Disguise Icon as Calculator",
+                false
+            ) { isChecked ->
+
+                if (isChecked) {
+
+                    DisguiseHelper.switchIcon(
+                        this,
+                        "calculator"
+                    )
+
+                } else {
+
+                    DisguiseHelper.switchIcon(
+                        this,
+                        "normal"
+                    )
                 }
-                startActivity(intent)
-            } else {
-                devicePolicyManager.removeActiveAdmin(componentName)
             }
-        }
-        privacyCard.addView(optUninstall)
 
-        mainLayout.addView(privacyCard)
+        privacyCard.addView(
+            stealthRow
+        )
 
-        // --- ABOUT SECTION GROUP (Yahan add kiya hai) ---
-        val aboutSectionTitle = TextView(this).apply {
-            text = "INFORMATION"
-            textSize = 13f
-            setTextColor(Color.parseColor("#6D6D72"))
-            setPadding(16, 32, 16, 8)
-        }
-        mainLayout.addView(aboutSectionTitle)
+        privacyCard.addView(
+            createDivider()
+        )
 
-        val aboutCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.settings_card_bg)
-            setPadding(24, 16, 24, 16)
-        }
+        // -------------------------------------------------
+        // UNINSTALL PROTECTION
+        // -------------------------------------------------
 
-        val aboutRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 16, 0, 16)
-            gravity = Gravity.CENTER_VERTICAL
-            setOnClickListener {
-                startActivity(Intent(this@SettingsActivity, AboutActivity::class.java))
+        val isAdminActive =
+            devicePolicyManager.isAdminActive(
+                componentName
+            )
+
+        val uninstallProtectionRow =
+            createSettingRow(
+                "Uninstall Protection",
+                isAdminActive
+            ) { isChecked ->
+
+                if (isChecked) {
+
+                    val intent =
+                        Intent(
+                            DevicePolicyManager
+                                .ACTION_ADD_DEVICE_ADMIN
+                        ).apply {
+
+                            putExtra(
+                                DevicePolicyManager
+                                    .EXTRA_DEVICE_ADMIN,
+                                componentName
+                            )
+
+                            putExtra(
+                                DevicePolicyManager
+                                    .EXTRA_ADD_EXPLANATION,
+                                "Enable Uninstall Protection to prevent unauthorized uninstallation of Farooqui App Lock."
+                            )
+                        }
+
+                    startActivity(
+                        intent
+                    )
+
+                } else {
+
+                    devicePolicyManager
+                        .removeActiveAdmin(
+                            componentName
+                        )
+                }
             }
-        }
 
-        val aboutLabel = TextView(this).apply {
-            text = "About & Version History"
-            textSize = 16f
-            setTextColor(Color.parseColor("#000000"))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        aboutRow.addView(aboutLabel)
+        privacyCard.addView(
+            uninstallProtectionRow
+        )
 
-        val arrowView = TextView(this).apply {
-            text = "›"
-            textSize = 22f
-            setTextColor(Color.parseColor("#C6C6C8"))
-        }
-        aboutRow.addView(arrowView)
+        mainLayout.addView(
+            privacyCard
+        )
 
-        aboutCard.addView(aboutRow)
-        mainLayout.addView(aboutCard)
+        // -------------------------------------------------
+        // UNLOCK BEHAVIOR
+        // -------------------------------------------------
 
-        scrollView.addView(mainLayout)
-        setContentView(scrollView)
+        val unlockBehaviorTitle =
+            createSectionTitle(
+                "UNLOCK BEHAVIOR"
+            )
+
+        mainLayout.addView(
+            unlockBehaviorTitle
+        )
+
+        val unlockBehaviorCard =
+            createCard()
+
+        val currentBehavior =
+            SettingsManager
+                .getUnlockBehavior(
+                    this
+                )
+
+        // Ask biometric every time
+        val everyTimeRow =
+            createSettingRow(
+                "Ask biometric every time",
+                currentBehavior == 0
+            ) { checked ->
+
+                if (checked) {
+
+                    SettingsManager
+                        .setUnlockBehavior(
+                            this,
+                            0
+                        )
+                }
+            }
+
+        unlockBehaviorCard.addView(
+            everyTimeRow
+        )
+
+        unlockBehaviorCard.addView(
+            createDivider()
+        )
+
+        // Stay unlocked until phone is locked
+        val untilPhoneLockedRow =
+            createSettingRow(
+                "Stay unlocked until phone is locked",
+                currentBehavior == 1
+            ) { checked ->
+
+                if (checked) {
+
+                    SettingsManager
+                        .setUnlockBehavior(
+                            this,
+                            1
+                        )
+                }
+            }
+
+        unlockBehaviorCard.addView(
+            untilPhoneLockedRow
+        )
+
+        mainLayout.addView(
+            unlockBehaviorCard
+        )
+
+        // -------------------------------------------------
+        // INFORMATION
+        // -------------------------------------------------
+
+        val aboutSectionTitle =
+            createSectionTitle(
+                "INFORMATION"
+            )
+
+        mainLayout.addView(
+            aboutSectionTitle
+        )
+
+        val aboutCard =
+            createCard()
+
+        val aboutRow =
+            LinearLayout(this).apply {
+
+                orientation =
+                    LinearLayout.HORIZONTAL
+
+                setPadding(
+                    0,
+                    16,
+                    0,
+                    16
+                )
+
+                gravity =
+                    Gravity.CENTER_VERTICAL
+
+                setOnClickListener {
+
+                    startActivity(
+                        Intent(
+                            this@SettingsActivity,
+                            AboutActivity::class.java
+                        )
+                    )
+                }
+            }
+
+        val aboutLabel =
+            TextView(this).apply {
+
+                text =
+                    "About & Version History"
+
+                textSize = 16f
+
+                setTextColor(
+                    Color.parseColor(
+                        "#000000"
+                    )
+                )
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+            }
+
+        aboutRow.addView(
+            aboutLabel
+        )
+
+        val arrowView =
+            TextView(this).apply {
+
+                text = "›"
+
+                textSize = 22f
+
+                setTextColor(
+                    Color.parseColor(
+                        "#C6C6C8"
+                    )
+                )
+            }
+
+        aboutRow.addView(
+            arrowView
+        )
+
+        aboutCard.addView(
+            aboutRow
+        )
+
+        mainLayout.addView(
+            aboutCard
+        )
+
+        // -------------------------------------------------
+        // FINAL LAYOUT
+        // -------------------------------------------------
+
+        scrollView.addView(
+            mainLayout
+        )
+
+        setContentView(
+            scrollView
+        )
     }
 
-    private fun createSettingRow(title: String, initialChecked: Boolean, onToggle: (Boolean) -> Unit): LinearLayout {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 16, 0, 16)
-            gravity = Gravity.CENTER_VERTICAL
-        }
+    // -----------------------------------------------------
+    // SECTION TITLE
+    // -----------------------------------------------------
 
-        val label = TextView(this).apply {
+    private fun createSectionTitle(
+        title: String
+    ): TextView {
+
+        return TextView(this).apply {
+
             text = title
-            textSize = 16f
-            setTextColor(Color.parseColor("#000000"))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        row.addView(label)
 
-        val switchView = SwitchCompat(this).apply {
-            isChecked = initialChecked
-            setOnCheckedChangeListener { _, isChecked ->
-                onToggle(isChecked)
-            }
+            textSize = 13f
+
+            setTextColor(
+                Color.parseColor(
+                    "#6D6D72"
+                )
+            )
+
+            setPadding(
+                16,
+                32,
+                16,
+                8
+            )
         }
-        row.addView(switchView)
+    }
+
+    // -----------------------------------------------------
+    // CARD
+    // -----------------------------------------------------
+
+    private fun createCard():
+            LinearLayout {
+
+        return LinearLayout(this).apply {
+
+            orientation =
+                LinearLayout.VERTICAL
+
+            setBackgroundResource(
+                R.drawable.settings_card_bg
+            )
+
+            setPadding(
+                24,
+                16,
+                24,
+                16
+            )
+        }
+    }
+
+    // -----------------------------------------------------
+    // SETTING ROW
+    // -----------------------------------------------------
+
+    private fun createSettingRow(
+        title: String,
+        initialChecked: Boolean,
+        onToggle: (Boolean) -> Unit
+    ): LinearLayout {
+
+        val row =
+            LinearLayout(this).apply {
+
+                orientation =
+                    LinearLayout.HORIZONTAL
+
+                setPadding(
+                    0,
+                    16,
+                    0,
+                    16
+                )
+
+                gravity =
+                    Gravity.CENTER_VERTICAL
+            }
+
+        val label =
+            TextView(this).apply {
+
+                text = title
+
+                textSize = 16f
+
+                setTextColor(
+                    Color.parseColor(
+                        "#000000"
+                    )
+                )
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+            }
+
+        row.addView(
+            label
+        )
+
+        val switchView =
+            SwitchCompat(this).apply {
+
+                isChecked =
+                    initialChecked
+
+                setOnCheckedChangeListener {
+                    _,
+                    isChecked ->
+
+                    onToggle(
+                        isChecked
+                    )
+                }
+            }
+
+        row.addView(
+            switchView
+        )
 
         return row
     }
 
-    private fun createDivider(): View {
+    // -----------------------------------------------------
+    // DIVIDER
+    // -----------------------------------------------------
+
+    private fun createDivider():
+            View {
+
         return View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply {
-                setMargins(0, 8, 0, 8)
-            }
-            setBackgroundColor(Color.parseColor("#C6C6C8"))
+
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    1
+                ).apply {
+
+                    setMargins(
+                        0,
+                        8,
+                        0,
+                        8
+                    )
+                }
+
+            setBackgroundColor(
+                Color.parseColor(
+                    "#C6C6C8"
+                )
+            )
         }
     }
 }
