@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -21,8 +22,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var intruderSelfieSwitch: SwitchCompat
     private lateinit var calculatorSwitch: SwitchCompat
     private lateinit var uninstallSwitch: SwitchCompat
+    private lateinit var notificationPrivacySwitch: SwitchCompat
 
     private var updatingBehavior = false
+    private var updatingNotificationPrivacy = false
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponent: ComponentName
@@ -53,6 +56,10 @@ class SettingsActivity : AppCompatActivity() {
                     adminComponent
                 )
         }
+
+        if (::notificationPrivacySwitch.isInitialized) {
+            updateNotificationPrivacyState()
+        }
     }
 
     private fun buildSettingsScreen() {
@@ -66,7 +73,6 @@ class SettingsActivity : AppCompatActivity() {
 
         val root =
             LinearLayout(this).apply {
-
                 orientation =
                     LinearLayout.VERTICAL
 
@@ -80,7 +86,6 @@ class SettingsActivity : AppCompatActivity() {
 
         val title =
             TextView(this).apply {
-
                 text = "Settings"
                 textSize = 30f
 
@@ -105,7 +110,6 @@ class SettingsActivity : AppCompatActivity() {
 
         val subtitle =
             TextView(this).apply {
-
                 text =
                     "Control your privacy and protection preferences"
 
@@ -124,6 +128,10 @@ class SettingsActivity : AppCompatActivity() {
             }
 
         root.addView(subtitle)
+
+        // ---------------------------------------------------------
+        // APP LOCK
+        // ---------------------------------------------------------
 
         addSectionTitle(
             root,
@@ -229,6 +237,10 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
+        // ---------------------------------------------------------
+        // INTRUDER PROTECTION
+        // ---------------------------------------------------------
+
         addSectionTitle(
             root,
             "INTRUDER PROTECTION"
@@ -263,6 +275,118 @@ class SettingsActivity : AppCompatActivity() {
             intruderCard,
             cardParams()
         )
+
+        // ---------------------------------------------------------
+        // NOTIFICATION PRIVACY
+        // ---------------------------------------------------------
+
+        addSectionTitle(
+            root,
+            "NOTIFICATION PRIVACY"
+        )
+
+        val notificationCard =
+            createCard()
+
+        val notificationTitle =
+            createCardTitle(
+                "Notification privacy"
+            )
+
+        notificationCard.addView(
+            notificationTitle
+        )
+
+        val notificationDescription =
+            createDescription(
+                "Hide notifications from locked apps while keeping your other notifications visible."
+            )
+
+        notificationCard.addView(
+            notificationDescription
+        )
+
+        notificationPrivacySwitch =
+            createSwitchRow(
+                notificationCard,
+                "Hide locked-app notifications",
+                "Farooqui App Lock will hide notifications posted by your locked apps."
+            )
+
+        notificationPrivacySwitch.isChecked =
+            SettingsManager.isNotificationPrivacyEnabled(
+                this
+            )
+
+        notificationPrivacySwitch.setOnCheckedChangeListener {
+                _,
+                checked ->
+
+            if (updatingNotificationPrivacy) {
+                return@setOnCheckedChangeListener
+            }
+
+            if (checked) {
+
+                if (!isNotificationAccessGranted()) {
+
+                    updatingNotificationPrivacy = true
+                    notificationPrivacySwitch.isChecked = false
+                    updatingNotificationPrivacy = false
+
+                    SettingsManager.setNotificationPrivacyEnabled(
+                        this,
+                        false
+                    )
+
+                    openNotificationAccessSettings()
+
+                } else {
+
+                    SettingsManager.setNotificationPrivacyEnabled(
+                        this,
+                        true
+                    )
+
+                    NotificationPrivacyService.refreshLockedApps()
+                }
+
+            } else {
+
+                SettingsManager.setNotificationPrivacyEnabled(
+                    this,
+                    false
+                )
+
+                NotificationPrivacyService.refreshLockedApps()
+            }
+        }
+
+        val accessRow =
+            createActionRow(
+                notificationCard,
+                "🔐  Notification Access",
+                "Required so App Lock can hide notifications from apps you have locked."
+            ) {
+                openNotificationAccessSettings()
+            }
+
+        notificationCard.addView(
+            accessRow,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        root.addView(
+            notificationCard,
+            cardParams()
+        )
+
+        // ---------------------------------------------------------
+        // DISGUISE
+        // ---------------------------------------------------------
 
         addSectionTitle(
             root,
@@ -307,6 +431,10 @@ class SettingsActivity : AppCompatActivity() {
             disguiseCard,
             cardParams()
         )
+
+        // ---------------------------------------------------------
+        // DEVICE SECURITY
+        // ---------------------------------------------------------
 
         addSectionTitle(
             root,
@@ -371,6 +499,10 @@ class SettingsActivity : AppCompatActivity() {
             securityCard,
             cardParams()
         )
+
+        // ---------------------------------------------------------
+        // TOOLS
+        // ---------------------------------------------------------
 
         addSectionTitle(
             root,
@@ -456,6 +588,73 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(scrollView)
     }
 
+    // -------------------------------------------------------------
+    // NOTIFICATION PRIVACY HELPERS
+    // -------------------------------------------------------------
+
+    private fun isNotificationAccessGranted(): Boolean {
+
+        val enabledPackages =
+            Settings.Secure.getString(
+                contentResolver,
+                "enabled_notification_listeners"
+            ) ?: return false
+
+        return enabledPackages.contains(
+            packageName
+        )
+    }
+
+    private fun openNotificationAccessSettings() {
+
+        try {
+
+            startActivity(
+                Intent(
+                    "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"
+                )
+            )
+
+        } catch (_: Exception) {
+
+            startActivity(
+                Intent(
+                    Settings.ACTION_SETTINGS
+                )
+            )
+        }
+    }
+
+    private fun updateNotificationPrivacyState() {
+
+        val enabled =
+            SettingsManager.isNotificationPrivacyEnabled(
+                this
+            )
+
+        val accessGranted =
+            isNotificationAccessGranted()
+
+        updatingNotificationPrivacy = true
+
+        notificationPrivacySwitch.isChecked =
+            enabled && accessGranted
+
+        updatingNotificationPrivacy = false
+
+        if (enabled && !accessGranted) {
+
+            SettingsManager.setNotificationPrivacyEnabled(
+                this,
+                false
+            )
+        }
+    }
+
+    // -------------------------------------------------------------
+    // UI HELPERS
+    // -------------------------------------------------------------
+
     private fun createCard(): MaterialCardView {
 
         return MaterialCardView(this).apply {
@@ -465,7 +664,8 @@ class SettingsActivity : AppCompatActivity() {
 
             cardElevation = 0f
 
-            strokeWidth = dp(1)
+            strokeWidth =
+                dp(1)
 
             strokeColor =
                 Color.parseColor("#E5E7EB")
@@ -612,7 +812,6 @@ class SettingsActivity : AppCompatActivity() {
 
         val switch =
             SwitchCompat(this).apply {
-
                 isClickable = true
             }
 
@@ -633,6 +832,74 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         return switch
+    }
+
+    private fun createActionRow(
+        parent: LinearLayout,
+        title: String,
+        description: String,
+        action: () -> Unit
+    ): LinearLayout {
+
+        return LinearLayout(this).apply {
+
+            orientation =
+                LinearLayout.VERTICAL
+
+            setPadding(
+                dp(6),
+                dp(12),
+                dp(6),
+                dp(12)
+            )
+
+            isClickable = true
+            isFocusable = true
+
+            setOnClickListener {
+                action()
+            }
+
+            val titleView =
+                TextView(this@SettingsActivity).apply {
+
+                    text = title
+
+                    textSize = 15f
+
+                    setTypeface(
+                        null,
+                        android.graphics.Typeface.BOLD
+                    )
+
+                    setTextColor(
+                        Color.parseColor("#111827")
+                    )
+                }
+
+            val descriptionView =
+                TextView(this@SettingsActivity).apply {
+
+                    text = description
+
+                    textSize = 12f
+
+                    setTextColor(
+                        Color.parseColor("#6B7280")
+                    )
+
+                    setPadding(
+                        0,
+                        dp(4),
+                        0,
+                        0
+                    )
+                }
+
+            addView(titleView)
+
+            addView(descriptionView)
+        }
     }
 
     private fun addActionRow(
@@ -699,13 +966,9 @@ class SettingsActivity : AppCompatActivity() {
                 )
             }
 
-        row.addView(
-            titleView
-        )
+        row.addView(titleView)
 
-        row.addView(
-            descriptionView
-        )
+        row.addView(descriptionView)
 
         parent.addView(
             row,
@@ -761,7 +1024,9 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun dp(value: Int): Int {
+    private fun dp(
+        value: Int
+    ): Int {
 
         return (
             value *
