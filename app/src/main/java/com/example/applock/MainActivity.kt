@@ -1,7 +1,6 @@
 package com.example.applock
 
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
@@ -15,11 +14,20 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import java.util.concurrent.Executor
 
 class MainActivity : AppCompatActivity() {
 
-    private val lockedAppsSet =
-        mutableSetOf<String>()
+    private lateinit var gridView: GridView
+
+    private var authenticated = false
+
+    private var authenticating = false
+
+    private var shouldAuthenticate = true
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -32,14 +40,183 @@ class MainActivity : AppCompatActivity() {
         setupModernUI()
     }
 
-    override fun onResume() {
+    override fun onStart() {
 
-        super.onResume()
+        super.onStart()
 
-        if (!isAccessibilityServiceEnabled()) {
-
-            showOneTimePermissionDialog()
+        if (shouldAuthenticate && !authenticated) {
+            authenticateForAppLock()
         }
+    }
+
+    override fun onStop() {
+
+        super.onStop()
+
+        // Jab AppLock foreground se bahar chala jaye,
+        // next time open hone par authentication maango.
+        if (!isChangingConfigurations) {
+            authenticated = false
+            shouldAuthenticate = true
+        }
+    }
+
+    private fun authenticateForAppLock() {
+
+        if (authenticating) {
+            return
+        }
+
+        authenticating = true
+
+        val biometricManager =
+            BiometricManager.from(this)
+
+        val authenticators =
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
+        val canAuthenticate =
+            biometricManager.canAuthenticate(
+                authenticators
+            )
+
+        if (
+            canAuthenticate !=
+            BiometricManager.BIOMETRIC_SUCCESS
+        ) {
+
+            authenticating = false
+
+            showSecuritySetupDialog()
+
+            return
+        }
+
+        val executor: Executor =
+            ContextCompat.getMainExecutor(
+                this
+            )
+
+        val biometricPrompt =
+            BiometricPrompt(
+                this,
+                executor,
+                object :
+                    BiometricPrompt.AuthenticationCallback() {
+
+                    override fun
+                        onAuthenticationSucceeded(
+                        result:
+                        BiometricPrompt.AuthenticationResult
+                    ) {
+
+                        super
+                            .onAuthenticationSucceeded(
+                                result
+                            )
+
+                        authenticating = false
+                        authenticated = true
+                        shouldAuthenticate = false
+                    }
+
+                    override fun
+                        onAuthenticationError(
+                        errorCode: Int,
+                        errString: CharSequence
+                    ) {
+
+                        super
+                            .onAuthenticationError(
+                                errorCode,
+                                errString
+                            )
+
+                        authenticating = false
+
+                        if (!authenticated) {
+
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Authentication required to open App Lock",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            finish()
+                        }
+                    }
+
+                    override fun
+                        onAuthenticationFailed() {
+
+                        super
+                            .onAuthenticationFailed()
+
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Authentication failed",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+
+        val promptInfo =
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle(
+                    "Farooqui App Lock"
+                )
+                .setSubtitle(
+                    "Unlock App Lock"
+                )
+                .setAllowedAuthenticators(
+                    authenticators
+                )
+                .build()
+
+        biometricPrompt.authenticate(
+            promptInfo
+        )
+    }
+
+    private fun showSecuritySetupDialog() {
+
+        AlertDialog.Builder(this)
+            .setTitle(
+                "Screen Lock Required"
+            )
+            .setMessage(
+                "Please set a fingerprint, face unlock, PIN, password or pattern on your phone before using Farooqui App Lock."
+            )
+            .setPositiveButton(
+                "Open Security Settings"
+            ) { _, _ ->
+
+                try {
+
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_SECURITY_SETTINGS
+                        )
+                    )
+
+                } catch (e: Exception) {
+
+                    Toast.makeText(
+                        this,
+                        "Unable to open security settings",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .setNegativeButton(
+                "Close"
+            ) { _, _ ->
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
 
     private fun setupModernUI() {
@@ -96,7 +273,8 @@ class MainActivity : AppCompatActivity() {
                 text =
                     "Farooqui App Lock"
 
-                textSize = 22f
+                textSize =
+                    22f
 
                 setTypeface(
                     null,
@@ -116,9 +294,10 @@ class MainActivity : AppCompatActivity() {
             TextView(this).apply {
 
                 text =
-                    "🟢 Protection Active"
+                    "🛡 Protection Active"
 
-                textSize = 12f
+                textSize =
+                    12f
 
                 setTextColor(
                     Color.parseColor("#34C759")
@@ -144,7 +323,7 @@ class MainActivity : AppCompatActivity() {
             ImageView(this).apply {
 
                 setImageResource(
-                    android.R.drawable.ic_menu_manage
+                    R.drawable.ic_settings_lock
                 )
 
                 setPadding(
@@ -179,7 +358,8 @@ class MainActivity : AppCompatActivity() {
                 text =
                     "Select Apps to Lock"
 
-                textSize = 15f
+                textSize =
+                    15f
 
                 setTypeface(
                     null,
@@ -202,14 +382,17 @@ class MainActivity : AppCompatActivity() {
             subTitle
         )
 
-        val gridView =
+        gridView =
             GridView(this).apply {
 
-                numColumns = 2
+                numColumns =
+                    2
 
-                horizontalSpacing = 16
+                horizontalSpacing =
+                    16
 
-                verticalSpacing = 16
+                verticalSpacing =
+                    16
 
                 setPadding(
                     24,
@@ -227,9 +410,7 @@ class MainActivity : AppCompatActivity() {
             mainLayout
         )
 
-        loadInstalledApps(
-            gridView
-        )
+        loadInstalledApps()
     }
 
     private fun isAccessibilityServiceEnabled():
@@ -273,6 +454,18 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
+    override fun onResume() {
+
+        super.onResume()
+
+        if (
+            !isAccessibilityServiceEnabled()
+        ) {
+
+            showOneTimePermissionDialog()
+        }
+    }
+
     private fun showOneTimePermissionDialog() {
 
         AlertDialog.Builder(this)
@@ -296,9 +489,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun loadInstalledApps(
-        gridView: GridView
-    ) {
+    private fun loadInstalledApps() {
 
         val pm =
             packageManager
@@ -311,9 +502,12 @@ class MainActivity : AppCompatActivity() {
         val appList =
             mutableListOf<AppModel>()
 
+        val lockedApps =
+            AppLockPreferences
+                .getLockedApps(this)
+
         for (app in packages) {
 
-            // AppLock ko list me mat dikhana
             if (
                 app.packageName ==
                 packageName
@@ -321,24 +515,6 @@ class MainActivity : AppCompatActivity() {
                 continue
             }
 
-            // System + user apps dono include honge
-            val appName =
-                pm.getApplicationLabel(
-                    app
-                ).toString()
-
-            val icon =
-                try {
-                    pm.getApplicationIcon(
-                        app
-                    )
-                } catch (e: Exception) {
-                    continue
-                }
-
-            // Sirf actual launchable apps ko list karo.
-            // Isse random internal system packages
-            // list ko unnecessarily fill nahi karenge.
             val launchIntent =
                 pm.getLaunchIntentForPackage(
                     app.packageName
@@ -348,12 +524,36 @@ class MainActivity : AppCompatActivity() {
                 continue
             }
 
+            val appName =
+                try {
+
+                    pm.getApplicationLabel(
+                        app
+                    ).toString()
+
+                } catch (e: Exception) {
+
+                    continue
+                }
+
+            val icon =
+                try {
+
+                    pm.getApplicationIcon(
+                        app
+                    )
+
+                } catch (e: Exception) {
+
+                    continue
+                }
+
             appList.add(
                 AppModel(
                     appName,
                     app.packageName,
                     icon,
-                    lockedAppsSet.contains(
+                    lockedApps.contains(
                         app.packageName
                     )
                 )
@@ -364,17 +564,25 @@ class MainActivity : AppCompatActivity() {
             it.appName.lowercase()
         }
 
+        // Service ko persistent list do
+        AppAccessibilityService
+            .lockedAppsList =
+            lockedApps.toSet()
+
         val adapter =
             AppGridAdapter(
                 this,
                 appList
             ) { app, isLocked ->
 
-                if (isLocked) {
+                // PERMANENTLY save toggle
+                AppLockPreferences.setLocked(
+                    this,
+                    app.packageName,
+                    isLocked
+                )
 
-                    lockedAppsSet.add(
-                        app.packageName
-                    )
+                if (isLocked) {
 
                     Toast.makeText(
                         this,
@@ -383,10 +591,6 @@ class MainActivity : AppCompatActivity() {
                     ).show()
 
                 } else {
-
-                    lockedAppsSet.remove(
-                        app.packageName
-                    )
 
                     AppAccessibilityService
                         .clearSession(
@@ -402,7 +606,9 @@ class MainActivity : AppCompatActivity() {
 
                 AppAccessibilityService
                     .lockedAppsList =
-                    lockedAppsSet.toSet()
+                    AppLockPreferences
+                        .getLockedApps(this)
+                        .toSet()
             }
 
         gridView.adapter =
