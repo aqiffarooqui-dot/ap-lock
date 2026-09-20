@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- Brand -->
     <color name="primary">#2563EB</color>
     <color name="secondary">#6366F1</color>
 
+    <!-- App / Launcher -->
     <color name="launcher_background">#EAF2FF</color>
     <color name="ic_launcher_background">#EAF2FF</color>
+
+    <!-- One UI inspired surfaces -->
+    <color name="settings_background">#F5F6F8</color>
+    <color name="settings_card">#FFFFFF</color>
+
+    <!-- Text -->
+    <color name="settings_text_primary">#111318</color>
+    <color name="settings_text_secondary">#6B7078</color>
+    <color name="settings_text_tertiary">#8A9099</color>
+
+    <!-- Dividers / borders -->
+    <color name="settings_divider">#E5E7EB</color>
 
 </resources>
