@@ -13,26 +13,25 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.google.android.material.card.MaterialCardView
 
 class SettingsActivity : AppCompatActivity() {
 
+    private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var componentName: ComponentName
 
-    private lateinit var devicePolicyManager:
-        DevicePolicyManager
+    private lateinit var everyTimeSwitch: SwitchCompat
+    private lateinit var phoneLockedSwitch: SwitchCompat
+    private lateinit var uninstallSwitch: SwitchCompat
+    private lateinit var disguiseSwitch: SwitchCompat
+    private lateinit var intruderSwitch: SwitchCompat
 
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
-
-        super.onCreate(
-            savedInstanceState
-        )
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         devicePolicyManager =
-            getSystemService(
-                Context.DEVICE_POLICY_SERVICE
-            ) as DevicePolicyManager
+            getSystemService(Context.DEVICE_POLICY_SERVICE)
+                    as DevicePolicyManager
 
         componentName =
             ComponentName(
@@ -40,582 +39,605 @@ class SettingsActivity : AppCompatActivity() {
                 MyDeviceAdminReceiver::class.java
             )
 
-        val scrollView =
-            ScrollView(this).apply {
+        buildScreen()
+    }
 
-                setBackgroundColor(
-                    Color.parseColor(
-                        "#F2F2F7"
-                    )
-                )
+    override fun onResume() {
+        super.onResume()
+
+        if (::uninstallSwitch.isInitialized) {
+            uninstallSwitch.setOnCheckedChangeListener(null)
+            uninstallSwitch.isChecked =
+                devicePolicyManager.isAdminActive(componentName)
+
+            uninstallSwitch.setOnCheckedChangeListener { _, checked ->
+                handleUninstallProtection(checked)
             }
+        }
+    }
 
-        val mainLayout =
-            LinearLayout(this).apply {
+    private fun buildScreen() {
 
-                orientation =
-                    LinearLayout.VERTICAL
-
-                setPadding(
-                    32,
-                    48,
-                    32,
-                    48
-                )
-            }
-
-        // -------------------------------------------------
-        // TITLE
-        // -------------------------------------------------
-
-        val titleView =
-            TextView(this).apply {
-
-                text = "Settings"
-
-                textSize = 28f
-
-                setTypeface(
-                    null,
-                    android.graphics.Typeface.BOLD
-                )
-
-                setTextColor(
-                    Color.parseColor(
-                        "#000000"
-                    )
-                )
-
-                setPadding(
-                    0,
-                    0,
-                    0,
-                    32
-                )
-            }
-
-        mainLayout.addView(
-            titleView
-        )
-
-        // -------------------------------------------------
-        // SECURITY & AUTHENTICATION
-        // -------------------------------------------------
-
-        val securitySectionTitle =
-            createSectionTitle(
-                "SECURITY & AUTHENTICATION"
+        val scrollView = ScrollView(this).apply {
+            setBackgroundColor(
+                Color.parseColor("#F5F7FB")
             )
+        }
 
-        mainLayout.addView(
-            securitySectionTitle
-        )
-
-        val securityCard =
-            createCard()
-
-        val phoneAuthInfo =
-            TextView(this).apply {
-
-                text =
-                    "App Lock uses your phone's biometric or screen-lock credential. No separate App Lock PIN is required."
-
-                textSize = 15f
-
-                setTextColor(
-                    Color.parseColor(
-                        "#3A3A3C"
-                    )
-                )
-
-                setPadding(
-                    0,
-                    16,
-                    0,
-                    16
-                )
-            }
-
-        securityCard.addView(
-            phoneAuthInfo
-        )
-
-        mainLayout.addView(
-            securityCard
-        )
-
-        // -------------------------------------------------
-        // PRIVACY & PROTECTION
-        // -------------------------------------------------
-
-        val privacySectionTitle =
-            createSectionTitle(
-                "PRIVACY & PROTECTION"
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                dp(20),
+                dp(28),
+                dp(20),
+                dp(40)
             )
+        }
 
-        mainLayout.addView(
-            privacySectionTitle
-        )
-
-        val privacyCard =
-            createCard()
-
-        // -------------------------------------------------
-        // INTRUDER SELFIE
-        // -------------------------------------------------
-
-        val intruderSelfieRow =
-            createSettingRow(
-                "Intruder Selfie (Capture on Fail)",
-                SettingsManager
-                    .isIntruderSelfieEnabled(
-                        this
-                    )
-            ) { isChecked ->
-
-                SettingsManager
-                    .setIntruderSelfieEnabled(
-                        this,
-                        isChecked
-                    )
-            }
-
-        privacyCard.addView(
-            intruderSelfieRow
-        )
-
-        privacyCard.addView(
-            createDivider()
-        )
-
-        // -------------------------------------------------
-        // DISGUISE ICON
-        // -------------------------------------------------
-
-        val stealthRow =
-            createSettingRow(
-                "Disguise Icon as Calculator",
-                false
-            ) { isChecked ->
-
-                if (isChecked) {
-
-                    DisguiseHelper.switchIcon(
-                        this,
-                        "calculator"
-                    )
-
-                } else {
-
-                    DisguiseHelper.switchIcon(
-                        this,
-                        "normal"
-                    )
-                }
-            }
-
-        privacyCard.addView(
-            stealthRow
-        )
-
-        privacyCard.addView(
-            createDivider()
-        )
-
-        // -------------------------------------------------
-        // UNINSTALL PROTECTION
-        // -------------------------------------------------
-
-        val isAdminActive =
-            devicePolicyManager.isAdminActive(
-                componentName
+        val title = TextView(this).apply {
+            text = "Settings"
+            textSize = 30f
+            setTypeface(
+                null,
+                android.graphics.Typeface.BOLD
             )
+            setTextColor(
+                Color.parseColor("#111318")
+            )
+        }
 
-        val uninstallProtectionRow =
-            createSettingRow(
-                "Uninstall Protection",
-                isAdminActive
-            ) { isChecked ->
-
-                if (isChecked) {
-
-                    val intent =
-                        Intent(
-                            DevicePolicyManager
-                                .ACTION_ADD_DEVICE_ADMIN
-                        ).apply {
-
-                            putExtra(
-                                DevicePolicyManager
-                                    .EXTRA_DEVICE_ADMIN,
-                                componentName
-                            )
-
-                            putExtra(
-                                DevicePolicyManager
-                                    .EXTRA_ADD_EXPLANATION,
-                                "Enable Uninstall Protection to prevent unauthorized uninstallation of Farooqui App Lock."
-                            )
-                        }
-
-                    startActivity(
-                        intent
-                    )
-
-                } else {
-
-                    devicePolicyManager
-                        .removeActiveAdmin(
-                            componentName
-                        )
-                }
-            }
-
-        privacyCard.addView(
-            uninstallProtectionRow
+        root.addView(
+            title,
+            marginParams(bottom = 4)
         )
 
-        mainLayout.addView(
-            privacyCard
+        val subtitle = TextView(this).apply {
+            text = "Configure your privacy and protection"
+            textSize = 14f
+            setTextColor(
+                Color.parseColor("#737780")
+            )
+        }
+
+        root.addView(
+            subtitle,
+            marginParams(bottom = 18)
         )
 
-        // -------------------------------------------------
+        // SECURITY
+
+        root.addView(
+            sectionTitle("SECURITY")
+        )
+
+        val securityCard = createCard()
+
+        val authInfo = TextView(this).apply {
+            text =
+                "Farooqui App Lock uses your phone's system biometric, PIN, password or pattern. No separate App Lock PIN is stored."
+            textSize = 14f
+            setTextColor(
+                Color.parseColor("#555A64")
+            )
+            setPadding(
+                dp(4),
+                dp(8),
+                dp(4),
+                dp(8)
+            )
+        }
+
+        securityCard.addView(authInfo)
+
+        root.addView(
+            securityCard,
+            marginParams(bottom = 8)
+        )
+
         // UNLOCK BEHAVIOR
-        // -------------------------------------------------
 
-        val unlockBehaviorTitle =
-            createSectionTitle(
-                "UNLOCK BEHAVIOR"
-            )
-
-        mainLayout.addView(
-            unlockBehaviorTitle
+        root.addView(
+            sectionTitle("UNLOCK BEHAVIOR")
         )
 
-        val unlockBehaviorCard =
-            createCard()
+        val behaviorCard = createCard()
 
         val currentBehavior =
-            SettingsManager
-                .getUnlockBehavior(
-                    this
-                )
+            SettingsManager.getUnlockBehavior(this)
 
-        // Ask biometric every time
-        val everyTimeRow =
-            createSettingRow(
+        everyTimeSwitch =
+            createSwitchRow(
                 "Ask biometric every time",
+                "Leaving the app requires authentication again.",
                 currentBehavior == 0
-            ) { checked ->
-
-                if (checked) {
-
-                    SettingsManager
-                        .setUnlockBehavior(
-                            this,
-                            0
-                        )
-                }
-            }
-
-        unlockBehaviorCard.addView(
-            everyTimeRow
-        )
-
-        unlockBehaviorCard.addView(
-            createDivider()
-        )
-
-        // Stay unlocked until phone is locked
-        val untilPhoneLockedRow =
-            createSettingRow(
-                "Stay unlocked until phone is locked",
-                currentBehavior == 1
-            ) { checked ->
-
-                if (checked) {
-
-                    SettingsManager
-                        .setUnlockBehavior(
-                            this,
-                            1
-                        )
-                }
-            }
-
-        unlockBehaviorCard.addView(
-            untilPhoneLockedRow
-        )
-
-        mainLayout.addView(
-            unlockBehaviorCard
-        )
-
-        // -------------------------------------------------
-        // INFORMATION
-        // -------------------------------------------------
-
-        val aboutSectionTitle =
-            createSectionTitle(
-                "INFORMATION"
             )
 
-        mainLayout.addView(
-            aboutSectionTitle
-        )
+        phoneLockedSwitch =
+            createSwitchRow(
+                "Stay unlocked until phone is locked",
+                "Reopening from Recents stays unlocked until screen lock.",
+                currentBehavior == 1
+            )
 
-        val aboutCard =
-            createCard()
+        everyTimeSwitch.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                phoneLockedSwitch.setOnCheckedChangeListener(null)
+                phoneLockedSwitch.isChecked = false
 
-        val aboutRow =
-            LinearLayout(this).apply {
-
-                orientation =
-                    LinearLayout.HORIZONTAL
-
-                setPadding(
-                    0,
-                    16,
-                    0,
-                    16
+                SettingsManager.setUnlockBehavior(
+                    this,
+                    0
                 )
 
-                gravity =
-                    Gravity.CENTER_VERTICAL
-
-                setOnClickListener {
-
-                    startActivity(
-                        Intent(
-                            this@SettingsActivity,
-                            AboutActivity::class.java
-                        )
-                    )
-                }
-            }
-
-        val aboutLabel =
-            TextView(this).apply {
-
-                text =
-                    "About & Version History"
-
-                textSize = 16f
-
-                setTextColor(
-                    Color.parseColor(
-                        "#000000"
-                    )
-                )
-
-                layoutParams =
-                    LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                    )
-            }
-
-        aboutRow.addView(
-            aboutLabel
-        )
-
-        val arrowView =
-            TextView(this).apply {
-
-                text = "›"
-
-                textSize = 22f
-
-                setTextColor(
-                    Color.parseColor(
-                        "#C6C6C8"
-                    )
+                phoneLockedSwitch.setOnCheckedChangeListener(
+                    phoneLockedListener()
                 )
             }
+        }
 
-        aboutRow.addView(
-            arrowView
+        phoneLockedSwitch.setOnCheckedChangeListener(
+            phoneLockedListener()
         )
+
+        behaviorCard.addView(
+            rowContainer(
+                "Ask biometric every time",
+                "Leaving the app requires authentication again.",
+                everyTimeSwitch
+            )
+        )
+
+        behaviorCard.addView(createDivider())
+
+        behaviorCard.addView(
+            rowContainer(
+                "Stay unlocked until phone is locked",
+                "Reopening from Recents stays unlocked until screen lock.",
+                phoneLockedSwitch
+            )
+        )
+
+        root.addView(
+            behaviorCard,
+            marginParams(bottom = 8)
+        )
+
+        // PRIVACY
+
+        root.addView(
+            sectionTitle("PRIVACY & PROTECTION")
+        )
+
+        val privacyCard = createCard()
+
+        intruderSwitch =
+            createSwitchRow(
+                "Intruder Selfie",
+                "Capture a photo after a failed biometric attempt.",
+                SettingsManager.isIntruderSelfieEnabled(this)
+            )
+
+        intruderSwitch.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setIntruderSelfieEnabled(
+                this,
+                checked
+            )
+        }
+
+        privacyCard.addView(
+            rowContainer(
+                "Intruder Selfie",
+                "Capture a photo after a failed biometric attempt.",
+                intruderSwitch
+            )
+        )
+
+        privacyCard.addView(createDivider())
+
+        disguiseSwitch =
+            createSwitchRow(
+                "Calculator Icon Disguise",
+                "Hide the normal launcher identity behind a calculator icon.",
+                false
+            )
+
+        disguiseSwitch.setOnCheckedChangeListener { _, checked ->
+            DisguiseHelper.switchIcon(
+                this,
+                if (checked) "calculator" else "normal"
+            )
+        }
+
+        privacyCard.addView(
+            rowContainer(
+                "Calculator Icon Disguise",
+                "Hide the normal launcher identity behind a calculator icon.",
+                disguiseSwitch
+            )
+        )
+
+        privacyCard.addView(createDivider())
+
+        uninstallSwitch =
+            createSwitchRow(
+                "Uninstall Protection",
+                "Use Android Device Admin to make unauthorized removal harder.",
+                devicePolicyManager.isAdminActive(componentName)
+            )
+
+        uninstallSwitch.setOnCheckedChangeListener { _, checked ->
+            handleUninstallProtection(checked)
+        }
+
+        privacyCard.addView(
+            rowContainer(
+                "Uninstall Protection",
+                "Use Android Device Admin to make unauthorized removal harder.",
+                uninstallSwitch
+            )
+        )
+
+        root.addView(
+            privacyCard,
+            marginParams(bottom = 8)
+        )
+
+        // INTRUDER CENTER
+
+        root.addView(
+            sectionTitle("SECURITY TOOLS")
+        )
+
+        val toolsCard = createCard()
+
+        toolsCard.addView(
+            createNavigationRow(
+                "Intruder Gallery",
+                "View and manage captured intruder photos."
+            ) {
+                startActivity(
+                    Intent(
+                        this,
+                        IntruderGalleryActivity::class.java
+                    )
+                )
+            }
+        )
+
+        toolsCard.addView(createDivider())
+
+        toolsCard.addView(
+            createNavigationRow(
+                "Security Center",
+                "Check App Lock protection and system permissions."
+            ) {
+                startActivity(
+                    Intent(
+                        this,
+                        SecurityActivity::class.java
+                    )
+                )
+            }
+        )
+
+        root.addView(
+            toolsCard,
+            marginParams(bottom = 8)
+        )
+
+        // ABOUT
+
+        root.addView(
+            sectionTitle("INFORMATION")
+        )
+
+        val aboutCard = createCard()
 
         aboutCard.addView(
-            aboutRow
-        )
-
-        mainLayout.addView(
-            aboutCard
-        )
-
-        // -------------------------------------------------
-        // FINAL LAYOUT
-        // -------------------------------------------------
-
-        scrollView.addView(
-            mainLayout
-        )
-
-        setContentView(
-            scrollView
-        )
-    }
-
-    // -----------------------------------------------------
-    // SECTION TITLE
-    // -----------------------------------------------------
-
-    private fun createSectionTitle(
-        title: String
-    ): TextView {
-
-        return TextView(this).apply {
-
-            text = title
-
-            textSize = 13f
-
-            setTextColor(
-                Color.parseColor(
-                    "#6D6D72"
+            createNavigationRow(
+                "About & Version History",
+                "App information and release history."
+            ) {
+                startActivity(
+                    Intent(
+                        this,
+                        AboutActivity::class.java
+                    )
                 )
-            )
-
-            setPadding(
-                16,
-                32,
-                16,
-                8
-            )
-        }
-    }
-
-    // -----------------------------------------------------
-    // CARD
-    // -----------------------------------------------------
-
-    private fun createCard():
-            LinearLayout {
-
-        return LinearLayout(this).apply {
-
-            orientation =
-                LinearLayout.VERTICAL
-
-            setBackgroundResource(
-                R.drawable.settings_card_bg
-            )
-
-            setPadding(
-                24,
-                16,
-                24,
-                16
-            )
-        }
-    }
-
-    // -----------------------------------------------------
-    // SETTING ROW
-    // -----------------------------------------------------
-
-    private fun createSettingRow(
-        title: String,
-        initialChecked: Boolean,
-        onToggle: (Boolean) -> Unit
-    ): LinearLayout {
-
-        val row =
-            LinearLayout(this).apply {
-
-                orientation =
-                    LinearLayout.HORIZONTAL
-
-                setPadding(
-                    0,
-                    16,
-                    0,
-                    16
-                )
-
-                gravity =
-                    Gravity.CENTER_VERTICAL
             }
-
-        val label =
-            TextView(this).apply {
-
-                text = title
-
-                textSize = 16f
-
-                setTextColor(
-                    Color.parseColor(
-                        "#000000"
-                    )
-                )
-
-                layoutParams =
-                    LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                    )
-            }
-
-        row.addView(
-            label
         )
 
-        val switchView =
-            SwitchCompat(this).apply {
+        root.addView(aboutCard)
 
-                isChecked =
-                    initialChecked
+        scrollView.addView(root)
 
-                setOnCheckedChangeListener {
-                    _,
-                    isChecked ->
+        setContentView(scrollView)
+    }
 
-                    onToggle(
-                        isChecked
-                    )
+    private fun phoneLockedListener():
+            (CompoundButtonCompat<Boolean>)? {
+        return null
+    }
+
+    private fun handlePhoneLockedChange(checked: Boolean) {
+        if (!checked) return
+
+        everyTimeSwitch.setOnCheckedChangeListener(null)
+        everyTimeSwitch.isChecked = false
+
+        SettingsManager.setUnlockBehavior(
+            this,
+            1
+        )
+
+        everyTimeSwitch.setOnCheckedChangeListener { _, value ->
+            if (value) {
+                phoneLockedSwitch.setOnCheckedChangeListener(null)
+                phoneLockedSwitch.isChecked = false
+                SettingsManager.setUnlockBehavior(this, 0)
+                phoneLockedSwitch.setOnCheckedChangeListener { _, v ->
+                    handlePhoneLockedChange(v)
                 }
             }
+        }
+    }
+
+    private fun handleUninstallProtection(
+        checked: Boolean
+    ) {
+        if (checked) {
+
+            val intent =
+                Intent(
+                    DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN
+                ).apply {
+
+                    putExtra(
+                        DevicePolicyManager.EXTRA_DEVICE_ADMIN,
+                        componentName
+                    )
+
+                    putExtra(
+                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                        "Enable Device Admin protection for Farooqui App Lock."
+                    )
+                }
+
+            startActivity(intent)
+
+        } else {
+
+            if (
+                devicePolicyManager.isAdminActive(
+                    componentName
+                )
+            ) {
+                devicePolicyManager.removeActiveAdmin(
+                    componentName
+                )
+            }
+        }
+    }
+
+    private fun createCard(): MaterialCardView {
+
+        return MaterialCardView(this).apply {
+            radius = dp(20).toFloat()
+            cardElevation = dp(1).toFloat()
+            setCardBackgroundColor(Color.WHITE)
+
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        }
+    }
+
+    private fun rowContainer(
+        title: String,
+        description: String,
+        switch: SwitchCompat
+    ): LinearLayout {
+
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(
+                dp(16),
+                dp(14),
+                dp(12),
+                dp(14)
+            )
+        }
+
+        val textBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+        }
+
+        val titleView = TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTypeface(
+                null,
+                android.graphics.Typeface.BOLD
+            )
+            setTextColor(
+                Color.parseColor("#17191D")
+            )
+        }
+
+        val descriptionView = TextView(this).apply {
+            text = description
+            textSize = 12.5f
+            setTextColor(
+                Color.parseColor("#737780")
+            )
+            setPadding(
+                0,
+                dp(4),
+                dp(8),
+                0
+            )
+        }
+
+        textBox.addView(titleView)
+        textBox.addView(descriptionView)
+
+        row.addView(textBox)
+
+        row.addView(switch)
+
+        return row
+    }
+
+    private fun createSwitchRow(
+        title: String,
+        description: String,
+        checked: Boolean
+    ): SwitchCompat {
+
+        return SwitchCompat(this).apply {
+            isChecked = checked
+            contentDescription = title
+        }
+    }
+
+    private fun createNavigationRow(
+        title: String,
+        description: String,
+        action: () -> Unit
+    ): LinearLayout {
+
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(
+                dp(16),
+                dp(16),
+                dp(12),
+                dp(16)
+            )
+
+            setOnClickListener {
+                action()
+            }
+        }
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+        }
+
+        val titleView = TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTypeface(
+                null,
+                android.graphics.Typeface.BOLD
+            )
+            setTextColor(
+                Color.parseColor("#17191D")
+            )
+        }
+
+        val descriptionView = TextView(this).apply {
+            text = description
+            textSize = 12.5f
+            setTextColor(
+                Color.parseColor("#737780")
+            )
+            setPadding(0, dp(4), 0, 0)
+        }
+
+        box.addView(titleView)
+        box.addView(descriptionView)
+
+        row.addView(box)
+
+        val arrow = TextView(this).apply {
+            text = "›"
+            textSize = 28f
+            setTextColor(
+                Color.parseColor("#9CA3AF")
+            )
+        }
 
         row.addView(
-            switchView
+            arrow,
+            LinearLayout.LayoutParams(
+                dp(36),
+                dp(48)
+            )
         )
 
         return row
     }
 
-    // -----------------------------------------------------
-    // DIVIDER
-    // -----------------------------------------------------
+    private fun sectionTitle(
+        title: String
+    ): TextView {
 
-    private fun createDivider():
-            View {
+        return TextView(this).apply {
+            text = title
+            textSize = 12f
+            setTypeface(
+                null,
+                android.graphics.Typeface.BOLD
+            )
+            setTextColor(
+                Color.parseColor("#6B7280")
+            )
+            setPadding(
+                dp(8),
+                dp(14),
+                dp(8),
+                dp(7)
+            )
+        }
+    }
+
+    private fun createDivider(): View {
 
         return View(this).apply {
+            setBackgroundColor(
+                Color.parseColor("#E5E7EB")
+            )
 
             layoutParams =
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     1
-                ).apply {
-
-                    setMargins(
-                        0,
-                        8,
-                        0,
-                        8
-                    )
-                }
-
-            setBackgroundColor(
-                Color.parseColor(
-                    "#C6C6C8"
                 )
-            )
         }
     }
+
+    private fun marginParams(
+        bottom: Int = 0
+    ): LinearLayout.LayoutParams {
+
+        return LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            bottomMargin = dp(bottom)
+        }
+    }
+
+    private fun dp(value: Int): Int =
+        (
+            value *
+                    resources.displayMetrics.density
+            ).toInt()
 }
