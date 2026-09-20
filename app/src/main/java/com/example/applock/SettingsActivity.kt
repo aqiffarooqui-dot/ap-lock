@@ -1860,9 +1860,19 @@ class SettingsActivity : AppCompatActivity() {
                     }
 
                     2 -> {
-                        DecoyManager.enableFakeCrash(this)
-                    }
-                }
+    DecoyManager.enableFakeCrash(this)
+
+    SettingsManager
+        .setCalculatorDisguiseEnabled(
+            this,
+            false
+        )
+
+    DisguiseHelper.switchIcon(
+        this,
+        "normal"
+    )
+}
 
                 logSetting(
                     "Decoy mode",
