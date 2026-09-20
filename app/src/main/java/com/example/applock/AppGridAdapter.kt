@@ -21,7 +21,7 @@ class AppGridAdapter(
     override fun getCount(): Int =
         appList.size
 
-    override fun getItem(position: Int): Any =
+    override fun getItem(position: Int): AppModel =
         appList[position]
 
     override fun getItemId(position: Int): Long =
@@ -43,19 +43,25 @@ class AppGridAdapter(
                     orientation =
                         LinearLayout.VERTICAL
 
+                    gravity =
+                        Gravity.CENTER_HORIZONTAL
+
                     setBackgroundResource(
                         R.drawable.settings_card_bg
                     )
 
                     setPadding(
-                        24,
-                        24,
-                        24,
-                        24
+                        dp(16),
+                        dp(16),
+                        dp(16),
+                        dp(16)
                     )
 
-                    gravity =
-                        Gravity.CENTER_HORIZONTAL
+                    layoutParams =
+                        ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
                 }
 
         } else {
@@ -69,6 +75,9 @@ class AppGridAdapter(
         val app =
             appList[position]
 
+        /*
+         * App icon
+         */
         val iconView =
             ImageView(context).apply {
 
@@ -76,17 +85,27 @@ class AppGridAdapter(
                     app.icon
                 )
 
+                scaleType =
+                    ImageView.ScaleType.CENTER_INSIDE
+
                 layoutParams =
                     LinearLayout.LayoutParams(
-                        120,
-                        120
-                    )
+                        dp(64),
+                        dp(64)
+                    ).apply {
+
+                        bottomMargin =
+                            dp(10)
+                    }
             }
 
         cardLayout.addView(
             iconView
         )
 
+        /*
+         * App name
+         */
         val nameView =
             TextView(context).apply {
 
@@ -103,15 +122,8 @@ class AppGridAdapter(
 
                 setTextColor(
                     Color.parseColor(
-                        "#000000"
+                        "#111111"
                     )
-                )
-
-                setPadding(
-                    0,
-                    16,
-                    0,
-                    16
                 )
 
                 gravity =
@@ -122,49 +134,93 @@ class AppGridAdapter(
 
                 ellipsize =
                     android.text.TextUtils.TruncateAt.END
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+
+                        bottomMargin =
+                            dp(8)
+                    }
             }
 
         cardLayout.addView(
             nameView
         )
 
+        /*
+         * Lock switch
+         *
+         * Listener MUST be removed before
+         * changing isChecked because GridView
+         * recycles its child views.
+         */
         val switchView =
-            SwitchCompat(context)
+            SwitchCompat(context).apply {
 
-        // IMPORTANT:
-        // listener pehle remove karo
-        // taki recycled GridView item unwanted
-        // callback trigger na kare.
-        switchView.setOnCheckedChangeListener(
-            null
-        )
-
-        switchView.isChecked =
-            app.isLocked
-
-        switchView.setOnCheckedChangeListener {
-                _,
-                isChecked ->
-
-            if (
-                app.isLocked !=
-                isChecked
-            ) {
-
-                app.isLocked =
-                    isChecked
-
-                onLockChanged(
-                    app,
-                    isChecked
+                setOnCheckedChangeListener(
+                    null
                 )
+
+                isChecked =
+                    app.isLocked
+
+                contentDescription =
+                    if (app.isLocked) {
+                        "${app.appName} is locked"
+                    } else {
+                        "${app.appName} is unlocked"
+                    }
+
+                setOnCheckedChangeListener {
+                        _,
+                        isChecked ->
+
+                    if (
+                        app.isLocked !=
+                        isChecked
+                    ) {
+
+                        app.isLocked =
+                            isChecked
+
+                        contentDescription =
+                            if (isChecked) {
+                                "${app.appName} is locked"
+                            } else {
+                                "${app.appName} is unlocked"
+                            }
+
+                        onLockChanged(
+                            app,
+                            isChecked
+                        )
+                    }
+                }
+
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
             }
-        }
 
         cardLayout.addView(
             switchView
         )
 
         return cardLayout
+    }
+
+    private fun dp(
+        value: Int
+    ): Int {
+
+        return (
+            value *
+                context.resources.displayMetrics.density
+            ).toInt()
     }
 }
