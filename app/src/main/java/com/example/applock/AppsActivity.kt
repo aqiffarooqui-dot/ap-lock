@@ -82,7 +82,6 @@ class AppsActivity : AppCompatActivity() {
             TextView(this).apply {
 
                 text = "Protected Apps"
-
                 textSize = 28f
 
                 setTextColor(
@@ -97,10 +96,7 @@ class AppsActivity : AppCompatActivity() {
 
         root.addView(
             title,
-            LinearLayout.LayoutParams(
-                -1,
-                -2
-            )
+            LinearLayout.LayoutParams(-1, -2)
         )
 
         val subtitle =
@@ -125,19 +121,14 @@ class AppsActivity : AppCompatActivity() {
 
         root.addView(
             subtitle,
-            LinearLayout.LayoutParams(
-                -1,
-                -2
-            )
+            LinearLayout.LayoutParams(-1, -2)
         )
 
         searchEditText =
             EditText(this).apply {
 
                 hint = "Search apps"
-
                 textSize = 15f
-
                 singleLine = true
 
                 setPadding(
@@ -270,8 +261,8 @@ class AppsActivity : AppCompatActivity() {
 
         val groupsButton =
             createActionButton(
-                text = "Groups",
-                filled = false
+                "Groups",
+                false
             )
 
         groupsButton.setOnClickListener {
@@ -290,8 +281,8 @@ class AppsActivity : AppCompatActivity() {
 
         val lockAll =
             createActionButton(
-                text = "Lock All",
-                filled = true
+                "Lock All",
+                true
             )
 
         lockAll.setOnClickListener {
@@ -310,8 +301,8 @@ class AppsActivity : AppCompatActivity() {
 
         val unlockAll =
             createActionButton(
-                text = "Unlock All",
-                filled = false
+                "Unlock All",
+                false
             )
 
         unlockAll.setOnClickListener {
@@ -340,7 +331,6 @@ class AppsActivity : AppCompatActivity() {
             ListView(this).apply {
 
                 divider = null
-
                 dividerHeight = 0
 
                 overScrollMode =
@@ -382,9 +372,7 @@ class AppsActivity : AppCompatActivity() {
         return TextView(this).apply {
 
             this.text = text
-
             textSize = 12f
-
             gravity = Gravity.CENTER
 
             setPadding(
@@ -433,10 +421,7 @@ class AppsActivity : AppCompatActivity() {
             val currentPackage =
                 appInfo.packageName
 
-            if (
-                currentPackage ==
-                packageName
-            ) {
+            if (currentPackage == packageName) {
                 continue
             }
 
@@ -454,9 +439,7 @@ class AppsActivity : AppCompatActivity() {
                 }
 
             val isSystem =
-                isSystemApplication(
-                    appInfo
-                )
+                isSystemApplication(appInfo)
 
             val category =
                 getAppCategory(
@@ -467,21 +450,11 @@ class AppsActivity : AppCompatActivity() {
 
             allApps.add(
                 AppModel(
-                    packageName =
-                        currentPackage,
-
-                    appName =
-                        appName,
-
-                    icon =
-                        appInfo.loadIcon(pm),
-
-                    isSystem =
-                        isSystem,
-
-                    category =
-                        category,
-
+                    appName = appName,
+                    packageName = currentPackage,
+                    icon = appInfo.loadIcon(pm),
+                    isSystem = isSystem,
+                    category = category,
                     isLocked =
                         isEffectivelyLocked(
                             currentPackage
@@ -532,6 +505,7 @@ class AppsActivity : AppCompatActivity() {
                 packageName
             )
             .any { groupName ->
+
                 AppGroupManager.isGroupLocked(
                     this,
                     groupName
@@ -549,6 +523,7 @@ class AppsActivity : AppCompatActivity() {
                 packageName
             )
             .any { groupName ->
+
                 AppGroupManager.isGroupLocked(
                     this,
                     groupName
@@ -584,7 +559,6 @@ class AppsActivity : AppCompatActivity() {
                 value.contains("messenger") ||
                 value.contains("snapchat") ||
                 value.contains("twitter") ||
-                value.contains("x.com") ||
                 value.contains("linkedin") ->
                 "Social"
 
@@ -600,8 +574,7 @@ class AppsActivity : AppCompatActivity() {
                 value.contains("camera") ->
                 "Photos"
 
-            value.contains("game") ||
-                value.contains("play") ->
+            value.contains("game") ->
                 "Games"
 
             else ->
@@ -614,6 +587,8 @@ class AppsActivity : AppCompatActivity() {
         if (!::adapter.isInitialized) {
             return
         }
+
+        syncAppLockStates()
 
         adapter.notifyDataSetChanged()
 
@@ -629,6 +604,17 @@ class AppsActivity : AppCompatActivity() {
 
         countText.text =
             "$visibleCount apps • $lockedCount locked"
+    }
+
+    private fun syncAppLockStates() {
+
+        for (app in allApps) {
+
+            app.isLocked =
+                isEffectivelyLocked(
+                    app.packageName
+                )
+        }
     }
 
     private fun getFilteredApps():
@@ -707,7 +693,17 @@ class AppsActivity : AppCompatActivity() {
                     app.packageName
                 )
 
-            if (currentlyLocked == locked) {
+            if (
+                locked &&
+                currentlyLocked
+            ) {
+                continue
+            }
+
+            if (
+                !locked &&
+                !currentlyLocked
+            ) {
                 continue
             }
 
@@ -731,16 +727,49 @@ class AppsActivity : AppCompatActivity() {
             changedCount++
         }
 
+        /*
+         * Bulk Unlock also turns off group protection.
+         * This keeps group state and individual app state
+         * consistent.
+         */
+        if (!locked) {
+
+            val groups =
+                AppGroupManager.getGroups(
+                    this
+                )
+
+            for (groupName in groups) {
+
+                if (
+                    AppGroupManager.isGroupLocked(
+                        this,
+                        groupName
+                    )
+                ) {
+
+                    AppGroupManager.setGroupLocked(
+                        this,
+                        groupName,
+                        false
+                    )
+                }
+            }
+        }
+
         AppAccessibilityService.lockedAppsList =
             AppLockPreferences
                 .getLockedApps(this)
                 .toSet()
 
+        AppAccessibilityService.clearAllSessions()
+
         if (changedCount > 0) {
 
             SecurityActivityLogManager.addLog(
                 this,
-                SecurityActivityLogManager.TYPE_SETTING_CHANGED,
+                SecurityActivityLogManager
+                    .TYPE_SETTING_CHANGED,
                 if (locked)
                     "Apps locked in bulk"
                 else
@@ -839,7 +868,6 @@ class AppsActivity : AppCompatActivity() {
             EditText(this).apply {
 
                 hint = "Group name"
-
                 setSingleLine(true)
 
                 setPadding(
@@ -871,7 +899,8 @@ class AppsActivity : AppCompatActivity() {
 
                     SecurityActivityLogManager.addLog(
                         this,
-                        SecurityActivityLogManager.TYPE_SETTING_CHANGED,
+                        SecurityActivityLogManager
+                            .TYPE_SETTING_CHANGED,
                         "App group created",
                         name
                     )
@@ -972,7 +1001,8 @@ class AppsActivity : AppCompatActivity() {
 
                         SecurityActivityLogManager.addLog(
                             this,
-                            SecurityActivityLogManager.TYPE_SETTING_CHANGED,
+                            SecurityActivityLogManager
+                                .TYPE_SETTING_CHANGED,
                             "App group deleted",
                             groupName
                         )
@@ -999,11 +1029,13 @@ class AppsActivity : AppCompatActivity() {
     ) {
 
         if (allApps.isEmpty()) {
+
             Toast.makeText(
                 this,
                 "No launchable apps found",
                 Toast.LENGTH_SHORT
             ).show()
+
             return
         }
 
@@ -1066,6 +1098,7 @@ class AppsActivity : AppCompatActivity() {
                         groupName
                     )
                 ) {
+
                     applyGroupProtection(
                         groupName,
                         true
@@ -1117,13 +1150,16 @@ class AppsActivity : AppCompatActivity() {
 
         SecurityActivityLogManager.addLog(
             this,
-            SecurityActivityLogManager.TYPE_SETTING_CHANGED,
+            SecurityActivityLogManager
+                .TYPE_SETTING_CHANGED,
             if (locked)
                 "App group locked"
             else
                 "App group unlocked",
             groupName
         )
+
+        AppAccessibilityService.clearAllSessions()
 
         loadApps()
 
@@ -1249,9 +1285,7 @@ class AppsActivity : AppCompatActivity() {
         return TextView(this).apply {
 
             this.text = text
-
             textSize = 12f
-
             gravity = Gravity.CENTER
 
             setPadding(
@@ -1280,18 +1314,16 @@ class AppsActivity : AppCompatActivity() {
         radiusDp: Float
     ): GradientDrawable {
 
-        val drawable =
-            GradientDrawable()
+        return GradientDrawable().apply {
 
-        drawable.setColor(
-            Color.parseColor(color)
-        )
+            setColor(
+                Color.parseColor(color)
+            )
 
-        drawable.cornerRadius =
-            radiusDp *
-                resources.displayMetrics.density
-
-        return drawable
+            cornerRadius =
+                radiusDp *
+                    resources.displayMetrics.density
+        }
     }
 
     private fun showTemporaryUnlockDialog(
@@ -1370,7 +1402,8 @@ class AppsActivity : AppCompatActivity() {
 
         SecurityActivityLogManager.addLog(
             this,
-            SecurityActivityLogManager.TYPE_UNLOCK,
+            SecurityActivityLogManager
+                .TYPE_UNLOCK,
             "Temporary unlock",
             if (minutes == 0)
                 "${app.appName} until phone is locked"
@@ -1542,11 +1575,8 @@ class AppsActivity : AppCompatActivity() {
                     text =
                         app.appName
 
-                    textSize =
-                        15f
-
-                    maxLines =
-                        1
+                    textSize = 15f
+                    maxLines = 1
 
                     ellipsize =
                         android.text.TextUtils
@@ -1579,6 +1609,7 @@ class AppsActivity : AppCompatActivity() {
 
                     text =
                         when {
+
                             groupLocked ->
                                 "Group protected"
 
@@ -1589,8 +1620,7 @@ class AppsActivity : AppCompatActivity() {
                                 app.category
                         }
 
-                    textSize =
-                        11f
+                    textSize = 11f
 
                     setTextColor(
                         Color.parseColor(
@@ -1631,11 +1661,8 @@ class AppsActivity : AppCompatActivity() {
                     ).apply {
 
                         text = "⏱"
-
                         textSize = 20f
-
-                        gravity =
-                            Gravity.CENTER
+                        gravity = Gravity.CENTER
 
                         setTextColor(
                             Color.parseColor(
@@ -1676,27 +1703,43 @@ class AppsActivity : AppCompatActivity() {
                     this@AppsActivity
                 ).apply {
 
-                    isChecked =
-                        effectiveLocked
-
                     setOnCheckedChangeListener(
                         null
                     )
+
+                    isChecked =
+                        effectiveLocked
+
+                    contentDescription =
+                        if (effectiveLocked)
+                            "${app.appName} locked"
+                        else
+                            "${app.appName} unlocked"
 
                     setOnCheckedChangeListener {
                             _,
                             checked ->
 
-                        /*
-                         * A group-locked app cannot be individually
-                         * unlocked while the group itself is protected.
-                         */
                         if (
                             !checked &&
                             groupLocked
                         ) {
 
+                            setOnCheckedChangeListener(
+                                null
+                            )
+
                             isChecked = true
+
+                            setOnCheckedChangeListener {
+                                    _,
+                                    newChecked ->
+
+                                handleAppLockChange(
+                                    app,
+                                    newChecked
+                                )
+                            }
 
                             Toast.makeText(
                                 this@AppsActivity,
@@ -1707,93 +1750,10 @@ class AppsActivity : AppCompatActivity() {
                             return@setOnCheckedChangeListener
                         }
 
-                        /*
-                         * System-app protection rule.
-                         */
-                        if (
-                            app.isSystem &&
-                            !AppLockRulesManager
-                                .isSystemAppLockEnabled(
-                                    this@AppsActivity
-                                )
-                        ) {
-
-                            isChecked = false
-
-                            Toast.makeText(
-                                this@AppsActivity,
-                                "System app locking is disabled",
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            return@setOnCheckedChangeListener
-                        }
-
-                        val previousState =
-                            isEffectivelyLocked(
-                                app.packageName
-                            )
-
-                        AppLockPreferences.setLocked(
-                            this@AppsActivity,
-                            app.packageName,
+                        handleAppLockChange(
+                            app,
                             checked
                         )
-
-                        if (!checked) {
-
-                            TemporaryUnlockManager
-                                .clearTemporaryUnlock(
-                                    this@AppsActivity,
-                                    app.packageName
-                                )
-                        }
-
-                        app.isLocked =
-                            checked
-
-                        AppAccessibilityService
-                            .lockedAppsList =
-                            AppLockPreferences
-                                .getLockedApps(
-                                    this@AppsActivity
-                                )
-                                .toSet()
-
-                        if (
-                            previousState != checked
-                        ) {
-
-                            if (checked) {
-
-                                StatsManager
-                                    .recordAppLocked(
-                                        this@AppsActivity
-                                    )
-
-                                SecurityActivityLogManager
-                                    .addLog(
-                                        this@AppsActivity,
-                                        SecurityActivityLogManager
-                                            .TYPE_APP_LOCKED,
-                                        "App locked",
-                                        app.appName
-                                    )
-
-                            } else {
-
-                                SecurityActivityLogManager
-                                    .addLog(
-                                        this@AppsActivity,
-                                        SecurityActivityLogManager
-                                            .TYPE_APP_UNLOCKED,
-                                        "App unlocked",
-                                        app.appName
-                                    )
-                            }
-                        }
-
-                        refreshList()
                     }
                 }
 
@@ -1823,6 +1783,100 @@ class AppsActivity : AppCompatActivity() {
 
             return card
         }
+    }
+
+    private fun handleAppLockChange(
+        app: AppModel,
+        checked: Boolean
+    ) {
+
+        if (
+            app.isSystem &&
+            !AppLockRulesManager
+                .isSystemAppLockEnabled(
+                    this
+                )
+        ) {
+
+            Toast.makeText(
+                this,
+                "System app locking is disabled",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            refreshList()
+            return
+        }
+
+        val previousState =
+            isEffectivelyLocked(
+                app.packageName
+            )
+
+        AppLockPreferences.setLocked(
+            this,
+            app.packageName,
+            checked
+        )
+
+        if (!checked) {
+
+            TemporaryUnlockManager
+                .clearTemporaryUnlock(
+                    this,
+                    app.packageName
+                )
+
+            AppAccessibilityService
+                .clearSession(
+                    app.packageName
+                )
+        }
+
+        if (checked) {
+
+            AppAccessibilityService
+                .clearSession(
+                    app.packageName
+                )
+        }
+
+        app.isLocked = checked
+
+        AppAccessibilityService.lockedAppsList =
+            AppLockPreferences
+                .getLockedApps(this)
+                .toSet()
+
+        if (previousState != checked) {
+
+            if (checked) {
+
+                StatsManager.recordAppLocked(
+                    this
+                )
+
+                SecurityActivityLogManager.addLog(
+                    this,
+                    SecurityActivityLogManager
+                        .TYPE_APP_LOCKED,
+                    "App locked",
+                    app.appName
+                )
+
+            } else {
+
+                SecurityActivityLogManager.addLog(
+                    this,
+                    SecurityActivityLogManager
+                        .TYPE_APP_UNLOCKED,
+                    "App unlocked",
+                    app.appName
+                )
+            }
+        }
+
+        refreshList()
     }
 
     private class AbsListViewParams(
