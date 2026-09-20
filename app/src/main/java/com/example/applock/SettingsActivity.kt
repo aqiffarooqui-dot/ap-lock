@@ -1,26 +1,23 @@
 package com.example.applock
 
-app.admin.DevicePolicyManager
-content.ComponentName
-content.Intent
-content.Context
-graphics.Color
-os.Bundle
-provider.Settings
-view.Gravity
-view.View
-widget.ImageView
-widget.LinearLayout
-widget.ScrollView
-widget.TextView
-appcompat.app.AlertDialog
-appcompat.app.AppCompatActivity
-appcompat.widget.SwitchCompat
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit.componentName: ComponentName
-    private lateinit.devicePolicyManager: DevicePolicyManager
+    private lateinit var componentName: ComponentName
+    private lateinit var devicePolicyManager: DevicePolicyManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +117,48 @@ class SettingsActivity : AppCompatActivity() {
         privacyCard.addView(optUninstall)
 
         mainLayout.addView(privacyCard)
+
+        // --- ABOUT SECTION GROUP (Yahan add kiya hai) ---
+        val aboutSectionTitle = TextView(this).apply {
+            text = "INFORMATION"
+            textSize = 13f
+            setTextColor(Color.parseColor("#6D6D72"))
+            setPadding(16, 32, 16, 8)
+        }
+        mainLayout.addView(aboutSectionTitle)
+
+        val aboutCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.settings_card_bg)
+            setPadding(24, 16, 24, 16)
+        }
+
+        val aboutRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 16, 0, 16)
+            gravity = Gravity.CENTER_VERTICAL
+            setOnClickListener {
+                startActivity(Intent(this@SettingsActivity, AboutActivity::class.java))
+            }
+        }
+
+        val aboutLabel = TextView(this).apply {
+            text = "About & Version History"
+            textSize = 16f
+            setTextColor(Color.parseColor("#000000"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        aboutRow.addView(aboutLabel)
+
+        val arrowView = TextView(this).apply {
+            text = "›"
+            textSize = 22f
+            setTextColor(Color.parseColor("#C6C6C8"))
+        }
+        aboutRow.addView(arrowView)
+
+        aboutCard.addView(aboutRow)
+        mainLayout.addView(aboutCard)
 
         scrollView.addView(mainLayout)
         setContentView(scrollView)
