@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -53,9 +54,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponent: ComponentName
 
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         ThemeManager.applySavedTheme(this)
@@ -112,9 +111,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val root =
             LinearLayout(this).apply {
-
-                orientation =
-                    LinearLayout.VERTICAL
+                orientation = LinearLayout.VERTICAL
 
                 setPadding(
                     dp(20),
@@ -126,7 +123,6 @@ class SettingsActivity : AppCompatActivity() {
 
         root.addView(
             TextView(this).apply {
-
                 text = "Settings"
                 textSize = 30f
 
@@ -150,7 +146,6 @@ class SettingsActivity : AppCompatActivity() {
 
         root.addView(
             TextView(this).apply {
-
                 text =
                     "Control your privacy, protection and App Lock preferences"
 
@@ -174,13 +169,10 @@ class SettingsActivity : AppCompatActivity() {
             "APP LOCK"
         )
 
-        val behaviorCard =
-            createCard()
+        val behaviorCard = createCard()
 
         behaviorCard.addView(
-            createCardTitle(
-                "Unlock behavior"
-            )
+            createCardTitle("Unlock behavior")
         )
 
         behaviorCard.addView(
@@ -204,9 +196,7 @@ class SettingsActivity : AppCompatActivity() {
             )
 
         val currentBehavior =
-            SettingsManager.getUnlockBehavior(
-                this
-            )
+            SettingsManager.getUnlockBehavior(this)
 
         everyTimeSwitch.isChecked =
             currentBehavior == 0
@@ -279,13 +269,10 @@ class SettingsActivity : AppCompatActivity() {
             cardParams()
         )
 
-        val rulesCard =
-            createCard()
+        val rulesCard = createCard()
 
         rulesCard.addView(
-            createCardTitle(
-                "Protection rules"
-            )
+            createCardTitle("Protection rules")
         )
 
         rulesCard.addView(
@@ -412,8 +399,7 @@ class SettingsActivity : AppCompatActivity() {
             "SCHEDULED APP LOCK"
         )
 
-        val scheduleCard =
-            createCard()
+        val scheduleCard = createCard()
 
         scheduleCard.addView(
             createCardTitle(
@@ -435,9 +421,7 @@ class SettingsActivity : AppCompatActivity() {
             )
 
         scheduleSwitch.isChecked =
-            ScheduledLockManager.isEnabled(
-                this
-            )
+            ScheduledLockManager.isEnabled(this)
 
         scheduleSwitch.setOnCheckedChangeListener {
                 _,
@@ -464,9 +448,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val scheduleTimeRow =
             LinearLayout(this).apply {
-
-                orientation =
-                    LinearLayout.VERTICAL
+                orientation = LinearLayout.VERTICAL
 
                 setPadding(
                     dp(6),
@@ -485,7 +467,6 @@ class SettingsActivity : AppCompatActivity() {
 
         scheduleTimeRow.addView(
             TextView(this).apply {
-
                 text = "Protection window"
                 textSize = 15f
 
@@ -502,7 +483,6 @@ class SettingsActivity : AppCompatActivity() {
 
         scheduleTimeView =
             TextView(this).apply {
-
                 text =
                     ScheduledLockManager
                         .getScheduleText(this@SettingsActivity)
@@ -523,7 +503,6 @@ class SettingsActivity : AppCompatActivity() {
 
         scheduleStatusView =
             TextView(this).apply {
-
                 textSize = 12f
 
                 setTextColor(
@@ -538,17 +517,10 @@ class SettingsActivity : AppCompatActivity() {
                 )
             }
 
-        scheduleTimeRow.addView(
-            scheduleTimeView
-        )
+        scheduleTimeRow.addView(scheduleTimeView)
+        scheduleTimeRow.addView(scheduleStatusView)
 
-        scheduleTimeRow.addView(
-            scheduleStatusView
-        )
-
-        scheduleCard.addView(
-            scheduleTimeRow
-        )
+        scheduleCard.addView(scheduleTimeRow)
 
         scheduleCard.addView(
             createActionRow(
@@ -570,8 +542,7 @@ class SettingsActivity : AppCompatActivity() {
             "INTRUDER PROTECTION"
         )
 
-        val intruderCard =
-            createCard()
+        val intruderCard = createCard()
 
         intruderCard.addView(
             createCardTitle(
@@ -716,8 +687,7 @@ class SettingsActivity : AppCompatActivity() {
             "NOTIFICATION PRIVACY"
         )
 
-        val notificationCard =
-            createCard()
+        val notificationCard = createCard()
 
         notificationCard.addView(
             createCardTitle(
@@ -822,8 +792,7 @@ class SettingsActivity : AppCompatActivity() {
             "TRUSTED UNLOCK"
         )
 
-        val trustedCard =
-            createCard()
+        val trustedCard = createCard()
 
         trustedCard.addView(
             createCardTitle(
@@ -866,7 +835,6 @@ class SettingsActivity : AppCompatActivity() {
 
         trustedStatusView =
             TextView(this).apply {
-
                 textSize = 12f
 
                 setTextColor(
@@ -881,9 +849,7 @@ class SettingsActivity : AppCompatActivity() {
                 )
             }
 
-        trustedCard.addView(
-            trustedStatusView
-        )
+        trustedCard.addView(trustedStatusView)
 
         trustedCard.addView(
             createActionRow(
@@ -925,8 +891,7 @@ class SettingsActivity : AppCompatActivity() {
             "DISGUISE"
         )
 
-        val disguiseCard =
-            createCard()
+        val disguiseCard = createCard()
 
         calculatorSwitch =
             createSwitchRow(
@@ -951,10 +916,7 @@ class SettingsActivity : AppCompatActivity() {
 
             DisguiseHelper.switchIcon(
                 this,
-                if (checked)
-                    "calculator"
-                else
-                    "normal"
+                if (checked) "calculator" else "normal"
             )
 
             if (checked) {
@@ -989,18 +951,14 @@ class SettingsActivity : AppCompatActivity() {
             "APPEARANCE"
         )
 
-        val appearanceCard =
-            createCard()
+        val appearanceCard = createCard()
 
         appearanceCard.addView(
-            createCardTitle(
-                "Theme"
-            )
+            createCardTitle("Theme")
         )
 
         themeStatusView =
             TextView(this).apply {
-
                 textSize = 13f
 
                 setTextColor(
@@ -1015,9 +973,7 @@ class SettingsActivity : AppCompatActivity() {
                 )
             }
 
-        appearanceCard.addView(
-            themeStatusView
-        )
+        appearanceCard.addView(themeStatusView)
 
         appearanceCard.addView(
             createActionRow(
@@ -1065,8 +1021,7 @@ class SettingsActivity : AppCompatActivity() {
             "DEVICE SECURITY"
         )
 
-        val securityCard =
-            createCard()
+        val securityCard = createCard()
 
         uninstallSwitch =
             createSwitchRow(
@@ -1154,8 +1109,7 @@ class SettingsActivity : AppCompatActivity() {
             "PRIVACY & SYSTEM"
         )
 
-        val privacyCard =
-            createCard()
+        val privacyCard = createCard()
 
         privacyCard.addView(
             createActionRow(
@@ -1174,9 +1128,7 @@ class SettingsActivity : AppCompatActivity() {
                 "Open Android battery settings for background reliability."
             ) {
                 PermissionStatusManager
-                    .openBatteryOptimizationSettings(
-                        this
-                    )
+                    .openBatteryOptimizationSettings(this)
             }
         )
 
@@ -1210,8 +1162,7 @@ class SettingsActivity : AppCompatActivity() {
             "TOOLS"
         )
 
-        val toolsCard =
-            createCard()
+        val toolsCard = createCard()
 
         addActionRow(
             toolsCard,
@@ -1244,7 +1195,7 @@ class SettingsActivity : AppCompatActivity() {
                     this,
                     AboutActivity::class.java
                 )
-            }
+            )
         }
 
         root.addView(
@@ -1264,8 +1215,7 @@ class SettingsActivity : AppCompatActivity() {
                     Color.parseColor("#6B7280")
                 )
 
-                gravity =
-                    Gravity.CENTER
+                gravity = Gravity.CENTER
 
                 setPadding(
                     dp(12),
@@ -1299,24 +1249,18 @@ class SettingsActivity : AppCompatActivity() {
 
         scheduleStatusView.text =
             if (!enabled) {
-
                 "Scheduled protection is turned off."
-
             } else if (
                 ScheduledLockManager.isInsideSchedule(this)
             ) {
-
                 "● Protection is active now."
-
             } else {
-
                 "○ Protection is currently outside the schedule."
             }
 
         updatingSchedule = true
 
-        scheduleSwitch.isChecked =
-            enabled
+        scheduleSwitch.isChecked = enabled
 
         updatingSchedule = false
     }
@@ -1378,10 +1322,7 @@ class SettingsActivity : AppCompatActivity() {
                 false
             )
 
-        dialog.setTitle(
-            "Schedule start time"
-        )
-
+        dialog.setTitle("Schedule start time")
         dialog.show()
     }
 
@@ -1418,10 +1359,7 @@ class SettingsActivity : AppCompatActivity() {
                 false
             )
 
-        dialog.setTitle(
-            "Schedule end time"
-        )
-
+        dialog.setTitle("Schedule end time")
         dialog.show()
     }
 
@@ -1440,16 +1378,13 @@ class SettingsActivity : AppCompatActivity() {
             }.toTypedArray()
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Failed-attempt threshold"
-            )
+            .setTitle("Failed-attempt threshold")
             .setSingleChoiceItems(
                 values,
                 current - 1
             ) { dialog, which ->
 
-                val selected =
-                    which + 1
+                val selected = which + 1
 
                 AppLockRulesManager
                     .setFailedAttemptLimit(
@@ -1477,8 +1412,7 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun isNotificationAccessGranted():
-            Boolean {
+    private fun isNotificationAccessGranted(): Boolean {
 
         return PermissionStatusManager
             .isNotificationListenerEnabled(this)
@@ -1489,16 +1423,12 @@ class SettingsActivity : AppCompatActivity() {
         try {
 
             PermissionStatusManager
-                .openNotificationListenerSettings(
-                    this
-                )
+                .openNotificationListenerSettings(this)
 
         } catch (_: Exception) {
 
             startActivity(
-                Intent(
-                    Settings.ACTION_SETTINGS
-                )
+                Intent(Settings.ACTION_SETTINGS)
             )
         }
     }
@@ -1507,9 +1437,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val enabled =
             SettingsManager
-                .isNotificationPrivacyEnabled(
-                    this
-                )
+                .isNotificationPrivacyEnabled(this)
 
         val accessGranted =
             isNotificationAccessGranted()
@@ -1575,14 +1503,14 @@ class SettingsActivity : AppCompatActivity() {
 
                 setText(
                     TrustedUnlockManager
-                        .getTrustedWifiName(this@SettingsActivity)
+                        .getTrustedWifiName(
+                            this@SettingsActivity
+                        )
                 )
             }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Trusted Wi-Fi"
-            )
+            .setTitle("Trusted Wi-Fi")
             .setMessage(
                 "Enter the exact Wi-Fi network name."
             )
@@ -1632,14 +1560,14 @@ class SettingsActivity : AppCompatActivity() {
 
                 setText(
                     TrustedUnlockManager
-                        .getTrustedBluetoothName(this@SettingsActivity)
+                        .getTrustedBluetoothName(
+                            this@SettingsActivity
+                        )
                 )
             }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Trusted Bluetooth"
-            )
+            .setTitle("Trusted Bluetooth")
             .setMessage(
                 "Enter the exact trusted Bluetooth device name."
             )
@@ -1689,14 +1617,14 @@ class SettingsActivity : AppCompatActivity() {
 
                 setText(
                     TrustedUnlockManager
-                        .getTrustedLocationName(this@SettingsActivity)
+                        .getTrustedLocationName(
+                            this@SettingsActivity
+                        )
                 )
             }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Trusted location"
-            )
+            .setTitle("Trusted location")
             .setMessage(
                 "Store a label for your trusted location."
             )
@@ -1755,9 +1683,7 @@ class SettingsActivity : AppCompatActivity() {
             }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Decoy mode"
-            )
+            .setTitle("Decoy mode")
             .setSingleChoiceItems(
                 modes,
                 selected
@@ -1834,9 +1760,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         themeStatusView.text =
-            when (
-                ThemeManager.getTheme(this)
-            ) {
+            when (ThemeManager.getTheme(this)) {
 
                 ThemeManager.THEME_LIGHT ->
                     "Current theme: Light"
@@ -1849,9 +1773,7 @@ class SettingsActivity : AppCompatActivity() {
             }
     }
 
-    private fun changeTheme(
-        theme: String
-    ) {
+    private fun changeTheme(theme: String) {
 
         ThemeManager.setTheme(
             this,
@@ -1869,14 +1791,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun showScreenSecurityDialog() {
 
         val enabled =
-            ScreenSecurityManager.isEnabled(
-                this
-            )
+            ScreenSecurityManager.isEnabled(this)
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Screen security"
-            )
+            .setTitle("Screen security")
             .setMessage(
                 if (enabled)
                     "Screenshot and screen recording protection is currently enabled for App Lock screens."
@@ -1920,9 +1838,7 @@ class SettingsActivity : AppCompatActivity() {
         if (logs.isEmpty()) {
 
             MaterialAlertDialogBuilder(this)
-                .setTitle(
-                    "Security Activity"
-                )
+                .setTitle("Security Activity")
                 .setMessage(
                     "No security activity recorded yet."
                 )
@@ -1947,13 +1863,9 @@ class SettingsActivity : AppCompatActivity() {
                     )
 
                     append("  •  ")
-
                     append(log.title)
 
-                    if (
-                        log.details.isNotBlank()
-                    ) {
-
+                    if (log.details.isNotBlank()) {
                         append("\n")
                         append(log.details)
                     }
@@ -1963,9 +1875,7 @@ class SettingsActivity : AppCompatActivity() {
             }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Recent Security Activity"
-            )
+            .setTitle("Recent Security Activity")
             .setMessage(text)
             .setPositiveButton(
                 "Close",
@@ -1974,9 +1884,7 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun formatTimestamp(
-        timestamp: Long
-    ): String {
+    private fun formatTimestamp(timestamp: Long): String {
 
         val formatter =
             java.text.SimpleDateFormat(
@@ -1992,15 +1900,11 @@ class SettingsActivity : AppCompatActivity() {
     private fun confirmResetRules() {
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Reset App Lock rules?"
-            )
+            .setTitle("Reset App Lock rules?")
             .setMessage(
                 "This resets rule preferences such as auto-lock, system-app locking, recent-app protection and restart locking."
             )
-            .setPositiveButton(
-                "Reset"
-            ) { _, _ ->
+            .setPositiveButton("Reset") { _, _ ->
 
                 AppLockRulesManager
                     .resetToDefaults(this)
@@ -2023,15 +1927,11 @@ class SettingsActivity : AppCompatActivity() {
     private fun confirmClearActivity() {
 
         MaterialAlertDialogBuilder(this)
-            .setTitle(
-                "Clear security activity?"
-            )
+            .setTitle("Clear security activity?")
             .setMessage(
                 "This permanently removes the local security activity timeline."
             )
-            .setPositiveButton(
-                "Clear"
-            ) { _, _ ->
+            .setPositiveButton("Clear") { _, _ ->
 
                 SecurityActivityLogManager
                     .clearAll(this)
@@ -2062,24 +1962,18 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    private fun createCard():
-            MaterialCardView {
+    private fun createCard(): MaterialCardView {
 
         return MaterialCardView(this).apply {
 
-            radius =
-                dp(20).toFloat()
+            radius = dp(20).toFloat()
 
-            cardElevation =
-                0f
+            cardElevation = 0f
 
-            strokeWidth =
-                dp(1)
+            strokeWidth = dp(1)
 
             strokeColor =
-                Color.parseColor(
-                    "#E5E7EB"
-                )
+                Color.parseColor("#E5E7EB")
 
             setCardBackgroundColor(
                 Color.WHITE
@@ -2110,9 +2004,7 @@ class SettingsActivity : AppCompatActivity() {
             )
 
             setTextColor(
-                Color.parseColor(
-                    "#111827"
-                )
+                Color.parseColor("#111827")
             )
 
             setPadding(
@@ -2135,9 +2027,7 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 13f
 
             setTextColor(
-                Color.parseColor(
-                    "#6B7280"
-                )
+                Color.parseColor("#6B7280")
             )
 
             setPadding(
@@ -2149,8 +2039,13 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /*
+     * FIX:
+     * Parent can be LinearLayout OR MaterialCardView.
+     * Therefore ViewGroup is required instead of LinearLayout.
+     */
     private fun createSwitchRow(
-        parent: LinearLayout,
+        parent: ViewGroup,
         title: String,
         description: String
     ): SwitchCompat {
@@ -2181,8 +2076,7 @@ class SettingsActivity : AppCompatActivity() {
                 layoutParams =
                     LinearLayout.LayoutParams(
                         0,
-                        LinearLayout.LayoutParams
-                            .WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
                         1f
                     )
             }
@@ -2195,9 +2089,7 @@ class SettingsActivity : AppCompatActivity() {
                 textSize = 15f
 
                 setTextColor(
-                    Color.parseColor(
-                        "#111827"
-                    )
+                    Color.parseColor("#111827")
                 )
             }
 
@@ -2209,9 +2101,7 @@ class SettingsActivity : AppCompatActivity() {
                 textSize = 12f
 
                 setTextColor(
-                    Color.parseColor(
-                        "#6B7280"
-                    )
+                    Color.parseColor("#6B7280")
                 )
 
                 setPadding(
@@ -2222,38 +2112,33 @@ class SettingsActivity : AppCompatActivity() {
                 )
             }
 
-        textContainer.addView(
-            titleView
-        )
-
-        textContainer.addView(
-            descriptionView
-        )
+        textContainer.addView(titleView)
+        textContainer.addView(descriptionView)
 
         val switch =
             SwitchCompat(this)
 
-        container.addView(
-            textContainer
-        )
+        container.addView(textContainer)
 
-        container.addView(
-            switch
-        )
+        container.addView(switch)
 
         parent.addView(
             container,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
             )
         )
 
         return switch
     }
 
+    /*
+     * FIX:
+     * Parent can be LinearLayout OR MaterialCardView.
+     */
     private fun createActionRow(
-        parent: LinearLayout,
+        parent: ViewGroup,
         title: String,
         description: String,
         action: () -> Unit
@@ -2293,9 +2178,7 @@ class SettingsActivity : AppCompatActivity() {
                     )
 
                     setTextColor(
-                        Color.parseColor(
-                            "#111827"
-                        )
+                        Color.parseColor("#111827")
                     )
                 }
             )
@@ -2310,9 +2193,7 @@ class SettingsActivity : AppCompatActivity() {
                     textSize = 12f
 
                     setTextColor(
-                        Color.parseColor(
-                            "#6B7280"
-                        )
+                        Color.parseColor("#6B7280")
                     )
 
                     setPadding(
@@ -2326,8 +2207,12 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /*
+     * FIX:
+     * Supports MaterialCardView as well as LinearLayout.
+     */
     private fun addActionRow(
-        parent: LinearLayout,
+        parent: ViewGroup,
         title: String,
         description: String,
         action: () -> Unit
@@ -2340,9 +2225,9 @@ class SettingsActivity : AppCompatActivity() {
                 description,
                 action
             ),
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
             )
         )
     }
@@ -2365,9 +2250,7 @@ class SettingsActivity : AppCompatActivity() {
                 )
 
                 setTextColor(
-                    Color.parseColor(
-                        "#6B7280"
-                    )
+                    Color.parseColor("#6B7280")
                 )
 
                 setPadding(
@@ -2388,14 +2271,11 @@ class SettingsActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply {
 
-            bottomMargin =
-                dp(8)
+            bottomMargin = dp(8)
         }
     }
 
-    private fun dp(
-        value: Int
-    ): Int {
+    private fun dp(value: Int): Int {
 
         return (
             value *
