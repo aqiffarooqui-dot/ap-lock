@@ -1,43 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- App discovery -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES" />
 
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Intruder selfie -->
+    <uses-permission
+        android:name="android.permission.CAMERA" />
+
+    <!-- Accessibility / lock-screen overlay support -->
+    <uses-permission
+        android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <queries>
 
         <intent>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
+            <action
+                android:name="android.intent.action.MAIN" />
+
+            <category
+                android:name="android.intent.category.LAUNCHER" />
         </intent>
 
     </queries>
 
     <application
+
         android:allowBackup="true"
+
         android:icon="@mipmap/ic_launcher"
+
         android:label="Farooqui App Lock"
+
         android:roundIcon="@mipmap/ic_launcher_round"
+
         android:supportsRtl="true"
+
         android:theme="@style/Theme.FarooquiAppLock">
 
+        <!-- Main launcher -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
 
             <intent-filter>
 
-                <action android:name="android.intent.action.MAIN" />
+                <action
+                    android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
 
             </intent-filter>
 
         </activity>
 
+        <!-- App screens -->
         <activity
             android:name=".AppsActivity"
             android:exported="false" />
@@ -62,10 +83,13 @@
             android:name=".WelcomeActivity"
             android:exported="false" />
 
+        <!-- Lock screen -->
         <activity
             android:name=".LockScreenActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:excludeFromRecents="true" />
 
+        <!-- Accessibility based app monitoring -->
         <service
             android:name=".AppAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -84,6 +108,7 @@
 
         </service>
 
+        <!-- Uninstall protection -->
         <receiver
             android:name=".MyDeviceAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
