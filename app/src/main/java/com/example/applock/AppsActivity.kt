@@ -129,7 +129,7 @@ class AppsActivity : AppCompatActivity() {
 
                 hint = "Search apps"
                 textSize = 15f
-                singleLine = true
+                setSingleLine(true)
 
                 setPadding(
                     dp(20),
@@ -1513,18 +1513,10 @@ class AppsActivity : AppCompatActivity() {
                         )
 
                     layoutParams =
-                        AbsListViewParams(
+                        AbsListView.LayoutParams(
                             -1,
-                            dp(78)
-                        ).apply {
-
-                            setMargins(
-                                0,
-                                0,
-                                0,
-                                dp(10)
-                            )
-                        }
+                            dp(88)
+                        )
                 }
 
             val icon =
