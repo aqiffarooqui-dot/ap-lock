@@ -1,20 +1,32 @@
 package com.example.applock
 
+app.admin.DevicePolicyManager
+content.ComponentName
 content.Intent
+content.Context
 graphics.Color
 os.Bundle
+provider.Settings
 view.Gravity
+view.View
 widget.ImageView
 widget.LinearLayout
 widget.ScrollView
 widget.TextView
+appcompat.app.AlertDialog
 appcompat.app.AppCompatActivity
 appcompat.widget.SwitchCompat
 
 class SettingsActivity : AppCompatActivity() {
 
+    private lateinit.componentName: ComponentName
+    private lateinit.devicePolicyManager: DevicePolicyManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        componentName = ComponentName(this, MyDeviceAdminReceiver::class.java)
 
         val scrollView = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#F2F2F7")) // iOS Background color
@@ -50,18 +62,17 @@ class SettingsActivity : AppCompatActivity() {
             setPadding(24, 16, 24, 16)
         }
 
-        // Option 1: Biometric Only / Both
+        // Option 1: Biometric Mode Preference
         val optBiometric = createSettingRow("Biometric Lock (Face/Fingerprint)", true) { isChecked ->
-            // Future logic for biometric toggle
+            val mode = if (isChecked) 0 else 1
+            SettingsManager.setBiometricMode(this, mode)
         }
         securityCard.addView(optBiometric)
-
-        // Divider
         securityCard.addView(createDivider())
 
-        // Option 2: Intruder Selfie
-        val optIntruder = createSettingRow("Intruder Selfie (Capture on Fail)", false) { isChecked ->
-            // Future logic for intruder selfie
+        // Option 2: Intruder Selfie Toggle
+        val optIntruder = createSettingRow("Intruder Selfie (Capture on Fail)", true) { isChecked ->
+            // Intruder selfie preference active/inactive logic
         }
         securityCard.addView(optIntruder)
 
@@ -82,18 +93,29 @@ class SettingsActivity : AppCompatActivity() {
             setPadding(24, 16, 24, 16)
         }
 
-        // Option 3: Stealth Mode / Icon disguise
-        val optStealth = createSettingRow("Disguise as Calculator", false) { isChecked ->
-            // Future logic for icon disguise
+        // Option 3: Disguise as Calculator Mode
+        val optStealth = createSettingRow("Disguise Icon as Calculator", false) { isChecked ->
+            if (isChecked) {
+                DisguiseHelper.switchIcon(this, "calculator")
+            } else {
+                DisguiseHelper.switchIcon(this, "normal")
+            }
         }
         privacyCard.addView(optStealth)
-
-        // Divider
         privacyCard.addView(createDivider())
 
-        // Option 4: Uninstall Protection
-        val optUninstall = createSettingRow("Uninstall Protection", true) { isChecked ->
-            // Future logic for device admin
+        // Option 4: Uninstall Protection (Device Administrator)
+        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
+        val optUninstall = createSettingRow("Uninstall Protection", isAdminActive) { isChecked ->
+            if (isChecked) {
+                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+                    putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable Uninstall Protection to prevent unauthorized uninstallation of Farooqui App Lock.")
+                }
+                startActivity(intent)
+            } else {
+                devicePolicyManager.removeActiveAdmin(componentName)
+            }
         }
         privacyCard.addView(optUninstall)
 
