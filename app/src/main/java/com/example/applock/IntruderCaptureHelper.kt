@@ -1,63 +1,187 @@
 package com.example.applock
 
+import android.content.ContentValues
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.SurfaceTexture
 import android.hardware.Camera
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
-import java.io.File
-import java.io.FileOutputStream
+import java.io.OutputStream
 
-class IntruderCaptureHelper(private val context: Context) {
+class IntruderCaptureHelper(
+    private val context: Context
+) {
 
     fun captureIntruderPhoto() {
+
+        var camera: Camera? = null
+
         try {
-            // Android Camera API (Legacy/Compat support for background silent capture)
-            val camera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT)
-            val parameters = camera.parameters
-            
-            // Set optimal picture size
-            camera.parameters = parameters
-            
-            camera.setPreviewTexture(android.graphics.SurfaceTexture(0))
+
+            camera = Camera.open(
+                Camera.CameraInfo.CAMERA_FACING_FRONT
+            )
+
+            camera.setPreviewTexture(
+                SurfaceTexture(0)
+            )
+
             camera.startPreview()
-            
-            camera.takePicture(null, null, Camera.PictureCallback { data, _ ->
-                try {
-                    val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
-                    saveImageToInternalStorage(bitmap)
-                } catch (e: Exception) {
-                    Log.e("IntruderCapture", "Error saving photo: ${e.message}")
-                } finally {
+
+            camera.takePicture(
+                null,
+                null,
+                Camera.PictureCallback { data, _ ->
+
                     try {
-                        camera.stopPreview()
-                        camera.release()
-                    } catch (ex: Exception) {
-                        // ignore
+                        saveImageToGallery(data)
+                    } catch (e: Exception) {
+                        Log.e(
+                            "IntruderCapture",
+                            "Error saving intruder selfie",
+                            e
+                        )
+                    } finally {
+
+                        try {
+                            camera.stopPreview()
+                        } catch (_: Exception) {
+                        }
+
+                        try {
+                            camera.release()
+                        } catch (_: Exception) {
+                        }
                     }
                 }
-            })
+            )
+
         } catch (e: Exception) {
-            Log.e("IntruderCapture", "Camera access failed: ${e.message}")
+
+            Log.e(
+                "IntruderCapture",
+                "Camera access failed",
+                e
+            )
+
+            try {
+                camera?.release()
+            } catch (_: Exception) {
+            }
         }
     }
 
-    private fun saveImageToInternalStorage(bitmap: Bitmap) {
-        val directory = File(context.filesDir, "IntruderSelfies")
-        if (!directory.exists()) {
-            directory.mkdirs()
+    private fun saveImageToGallery(
+        imageData: ByteArray
+    ) {
+
+        val resolver = context.contentResolver
+
+        val fileName =
+            "Intruder_${System.currentTimeMillis()}.jpg"
+
+        val contentValues =
+            ContentValues().apply {
+
+                put(
+                    MediaStore.Images.Media.DISPLAY_NAME,
+                    fileName
+                )
+
+                put(
+                    MediaStore.Images.Media.MIME_TYPE,
+                    "image/jpeg"
+                )
+
+                if (
+                    Build.VERSION.SDK_INT >=
+                    Build.VERSION_CODES.Q
+                ) {
+
+                    put(
+                        MediaStore.Images.Media.RELATIVE_PATH,
+                        Environment.DIRECTORY_PICTURES +
+                                "/Farooqui App Lock"
+                    )
+
+                    put(
+                        MediaStore.Images.Media.IS_PENDING,
+                        1
+                    )
+                }
+            }
+
+        val imageUri =
+            resolver.insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                contentValues
+            )
+
+        if (imageUri == null) {
+
+            Log.e(
+                "IntruderCapture",
+                "Unable to create Gallery image"
+            )
+
+            return
         }
-        val filename = "Intruder_${System.currentTimeMillis()}.jpg"
-        val file = File(directory, filename)
 
         try {
-            val stream = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-            stream.flush()
-            stream.close()
-            Log.d("IntruderCapture", "Intruder selfie saved successfully at: ${file.absolutePath}")
+
+            val outputStream: OutputStream? =
+                resolver.openOutputStream(imageUri)
+
+            outputStream?.use { stream ->
+                stream.write(imageData)
+                stream.flush()
+            }
+
+            if (
+                Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.Q
+            ) {
+
+                val updateValues =
+                    ContentValues().apply {
+
+                        put(
+                            MediaStore.Images.Media.IS_PENDING,
+                            0
+                        )
+                    }
+
+                resolver.update(
+                    imageUri,
+                    updateValues,
+                    null,
+                    null
+                )
+            }
+
+            Log.d(
+                "IntruderCapture",
+                "Intruder selfie saved to Gallery: $fileName"
+            )
+
         } catch (e: Exception) {
-            e.printStackTrace()
+
+            try {
+                resolver.delete(
+                    imageUri,
+                    null,
+                    null
+                )
+            } catch (_: Exception) {
+            }
+
+            Log.e(
+                "IntruderCapture",
+                "Failed to save intruder selfie",
+                e
+            )
         }
     }
 }
