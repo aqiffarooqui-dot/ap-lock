@@ -2,6 +2,8 @@ package com.example.applock
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
@@ -11,20 +13,21 @@ import java.util.concurrent.Executor
 class LockScreenActivity : AppCompatActivity() {
 
     private var isUnlocked = false
-    private var targetPackage: String? = null
+    private var targetPackageName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        targetPackage = intent.getStringExtra("TARGET_PACKAGE")
 
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        targetPackageName = intent.getStringExtra("PACKAGE_NAME")
+        
+        // Dark theme instant overlay background taaki piche ka app bilkul hide rahe
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setBackgroundColor(android.graphics.Color.parseColor("#1C1C1E"))
             gravity = android.view.Gravity.CENTER
         }
 
-        val text = android.widget.TextView(this).apply {
+        val text = TextView(this).apply {
             text = "Farooqui App Lock"
             textSize = 22f
             setTextColor(android.graphics.Color.WHITE)
@@ -34,6 +37,8 @@ class LockScreenActivity : AppCompatActivity() {
         layout.addView(text)
 
         setContentView(layout)
+
+        // Biometric prompt trigger karo
         showBiometricPrompt()
     }
 
@@ -53,16 +58,12 @@ class LockScreenActivity : AppCompatActivity() {
                     super.onAuthenticationSucceeded(result)
                     isUnlocked = true
                     AppAccessibilityService.isCurrentlyLocked = false
-                    Toast.makeText(applicationContext, "Unlocked Successfully", Toast.LENGTH_SHORT).show()
                     
-                    // Unlock hone ke baad seedha target app (jaise WhatsApp) ko foreground mein layenge
-                    if (!targetPackage.isNullOrEmpty()) {
-                        val launchIntent = packageManager.getLaunchIntentForPackage(targetPackage!!)
-                        if (launchIntent != null) {
-                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                            startActivity(launchIntent)
-                        }
+                    targetPackageName?.let { pkg ->
+                        AppAccessibilityService.setSessionUnlocked(pkg)
                     }
+
+                    Toast.makeText(applicationContext, "Unlocked Successfully", Toast.LENGTH_SHORT).show()
                     finish()
                 }
 
