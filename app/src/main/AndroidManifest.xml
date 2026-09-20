@@ -13,16 +13,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-        <!-- Main Default Activity -->
+        <!-- Welcome Activity (First launch intro - shows only once) -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:enabled="true">
+            android:name=".WelcomeActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Main Dashboard Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
 
         <!-- Disguise Alias 1: Calculator Mode -->
         <activity-alias
@@ -62,6 +66,12 @@
         <!-- Settings Activity -->
         <activity
             android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- About Activity -->
+        <activity
+            android:name=".AboutActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
