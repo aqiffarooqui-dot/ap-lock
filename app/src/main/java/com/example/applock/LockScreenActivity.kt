@@ -567,7 +567,7 @@ class LockScreenActivity : AppCompatActivity() {
                             context = this,
                             packageName = packageName,
                             appName = targetAppName,
-                            imageUri = imageUri
+                            imageUri = imageUri?.toString()
                         )
                     }
                 }
